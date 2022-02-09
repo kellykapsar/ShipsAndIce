@@ -1,69 +1,74 @@
 
 library(raster)
+library(stars)
 library(sf)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
-
-origmethod <- list.files("../Data_Processed/", pattern="TrafficInIce")
-origmethod <- lapply(origmethod, function(x){read.csv(paste0("../Data_Processed/",x))})
-origmethod <- do.call(rbind, origmethod)
-origmethod$traffic_km <- origmethod$length/1000
-origmethod <- origmethod %>% select(-length) 
-
-loopmethod <- list.files("../Data_Processed/", pattern="LoopMethod")
-loopmethod <- lapply(loopmethod, function(x){read.csv(paste0("../Data_Processed/",x))})
-loopmethod <- do.call(rbind, loopmethod)
-loopmethod <- loopmethod %>% rename(year=years, month=months, id=cells)
-
-allpixels <- rbind(origmethod, loopmethod) %>% select(-X)
-
-# Check to make sure no duplicate cell values for each year month combo
-qatest <- allpixels %>% group_by(year, month) %>% summarize(ncells=length(cells), nuniquecells=length(unique(cells)))
-which(qatest$ncells != qatest$nuniquecells)
-
-# Add in ice data 
-icecon <- readRDS("../Data_Processed/IceConcentration_SMOS.rds")
-icecondf <- icecon %>% 
-              stars::st_as_stars() %>% 
-              st_as_sf() %>% 
-              mutate(id=1:nrow(.)) %>% 
-              st_drop_geometry() %>% 
-              gather(key=yearmon, value=icecon, -id) %>% 
-              mutate(year = as.numeric(substr(yearmon, start=7, stop=10)), 
-                     month = as.numeric(substr(yearmon, start=11, stop=12)), 
-                     icecon = round(icecon, 2)) %>% 
-              select(-yearmon)
-
-icethick <- readRDS("../Data_Processed/IceThickness_SMOS.rds")
-icethickdf <- icethick %>% 
-  stars::st_as_stars() %>% 
-  st_as_sf() %>% 
-  mutate(id=1:nrow(.)) %>% 
-  st_drop_geometry() %>% 
-  gather(key=yearmon, value=icethick, -id) %>% 
-  mutate(year = as.numeric(substr(yearmon, start=7, stop=10)), 
-         month = as.numeric(substr(yearmon, start=11, stop=12)), 
-         icethick = round(icethick, 2)) %>% 
-  select(-yearmon)
+library(yarrr)
+library(ggsn)
 
 
-alldf <-left_join(icecondf, allpixels, by=c("year", "month", "id"))
-alldf <- alldf[,c("year", "month", "id", "icecon", "traffic_km")]
-# alldf$traffic_km[which(is.na(alldf$traffic_km))] <- 0
-alldf$traffic_km <- round(alldf$traffic_km, 2)
+# Projection (Alaska Albers)
+AA <- "+proj=aea +lat_1=55 +lat_2=65 +lat_0=50 +lon_0=-154 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
 
-aisinice <- alldf[which(alldf$icecon > 0 & alldf$traffic_km > 0),]
+# Basemap
+aisbounds <- st_read("../Data_Raw/ais_reshape.shp") %>% st_transform(AA)
+basemap <- read_sf("../Data_Raw/AK_CAN_RUS/AK_CAN_RUS.shp") %>% 
+              st_transform(AA)
+basemap.crop <- st_crop(basemap, st_buffer(aisbounds, 100000)) %>% 
+                  st_simplify(dTolerance=1000, preserveTopology = T)
+
+alldf <- read.csv("../Data_Processed/IceTrafficDataFrame.csv")
+# all sf == spatial data frame (each row is a unique cell)
+test <- st_read("../Data_Processed/IceTrafficDataFrame.shp") %>% st_intersection(aisbounds)
+
+inice <- alldf[which(alldf$icecon > 0 & alldf$traffic_km > 0),]
+
+hightraffids <- unique(inice$id[which(inice$traffic_km > 10000)])
 
 ############################################################################
-ggplot(allpixels, aes(x=traffic_km)) +
+ggplot(alldf, aes(x=traffic_km)) +
   geom_histogram(bins=50)
 
-ggplot(icecondf, aes(x=icecon)) +
+ggplot(alldf, aes(x=icecon)) +
   geom_histogram(bins=50)
 
 ############################################################################
-fit1 <- lm(traffic_km ~ icecon, data = aisinice)
+# Map of study area 
+############################################################################ 
+
+p3 <- ggplot() +
+  geom_sf(data=basemap.crop, fill="white", color="black", lwd=0.5, alpha = 0.9) +
+  geom_sf(data=aisbounds, fill=NA, color="black", lwd=1)+
+  geom_sf(data=test, aes(fill=c_2020_01))+
+  xlab("") +
+  ylab("") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme_bw() +
+  blank()+
+  theme(legend.title = element_text(size = 20),
+        legend.text = element_text(size = 20),
+        legend.position = c(0.05,0.125),
+        legend.background = element_rect(fill = "white", color = "black"),
+        axis.ticks = element_blank(),
+        axis.text=element_blank(),
+        panel.background = element_rect(fill = "lightblue"),
+        panel.border =  element_rect(colour = "black"),
+        panel.grid.major = element_line(colour = "transparent"))
+
+p3
+ggsave(plot=p3, filename= "TestMap.png", 
+       width=8, height=8, units="in")
+
+############################################################################
+hist(log(alldf$traffic_km))
+alldf$log_traffic_km <- log(alldf$traffic_km)
+
+aisinice <- alldf[which(alldf$icecon > 1),]
+
+fit1 <- lm(log_traffic_km ~ icecon, data = aisinice)
 
 ggplotRegression <- function (fit) {
   
