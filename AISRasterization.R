@@ -14,7 +14,6 @@ filelist <- list.files(paste0("D:/AlaskaConservation_AIS_20210225/Data_Processed
 
 files <- lapply(filelist, 
             function(x){st_read(paste0("D:/AlaskaConservation_AIS_20210225/Data_Processed_HPCC_FINAL/", year,"/Vector/", x))})
-
 # Group all vessel types together for each month 
 idx <- paste0(substr(filelist, start=8, stop=11), substr(filelist, start=13, stop=14))
 traffic <- lapply(unique(idx), function(x){do.call(rbind, files[which(idx == x)])})
@@ -76,8 +75,6 @@ icepixellength <- function(trafficsf, icesf){
             summarize(length=sum(newlen))
   return(intdf)
 }
-
-
 
 # Takes ~15 minutes to run 
 trafficcellsa <- lapply(traffic[1:6], function(x){icepixellength(x, iceconsf)})
