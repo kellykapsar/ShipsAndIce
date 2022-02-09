@@ -9,6 +9,7 @@ library(sp)
 library(dplyr)
 library(ncdf4)
 library(RNetCDF)
+library(stars)
 
 starttot <- proc.time()
 
@@ -28,40 +29,42 @@ aisbounds <- st_read("../Data_Raw/ais_reshape.shp") %>% st_transform(AA)
 basemap <- read_sf("../Data_Raw/AK_CAN_RUS/AK_CAN_RUS.shp") %>% st_transform(AA) %>%  st_buffer(0)
 
 
-# Load in all shp files 
-filelist <- list.files(paste0(wd, "Data_Raw/AIS/"), pattern='.tif')
-
-files <- lapply(filelist, function(x){raster::raster(paste0("../Data_Raw/AIS/", x))})
-
-# Create indices to join all months
-idx <- rep(1:72, each=4)
-
-# Create stack and combine all traffic types for each month into one layer
-allstack <- raster::stack(files)
-sumstack <- stackApply(allstack, indices = idx, fun=sum)
-
-names(sumstack) <- seq(as.Date("2015-01-01"), as.Date("2020-12-01"), by="month")
-
-raster::crs(sumstack) <- AA
-
 #############################################################################
-# Load in all sea ice extent files
-extlist <- as.list(list.files(paste0(wd, "Data_Raw/SeaIceExtent_20220103/"), pattern='.shp'))
-
-extdates <- lapply(extlist, function(x){as.Date(paste0(substr(x, start=10, stop=15), "01"), format="%Y%m%d")})
-
-extsf <- lapply(extlist, function(x){st_read(paste0(wd, "/Data_Raw/SeaIceExtent_20220103/", x)) %>% st_transform(AA)})
-
-
-vesselinice <- function(trafficraster, extentsf){
-  trafficraster_new <- raster::mask(trafficraster, aisbounds)
-  extentsf_new <- st_crop(extentsf, aisbounds)
-  masktraffic <- raster::mask(trafficraster, extentsf)
-  return(masktraffic)
-}
-
-shipinice <- lapply(1:72, function(x){vesselinice(sumstack[[x]], extsf[[x]])})
-shipinice <- raster::stack(shipinice)
+# NSIDC Ice Extent and AIS overlap
+#############################################################################
+# # Load in all shp files 
+# filelist <- list.files(paste0(wd, "Data_Raw/AIS/"), pattern='.tif')
+# 
+# files <- lapply(filelist, function(x){raster::raster(paste0("../Data_Raw/AIS/", x))})
+# 
+# # Create indices to join all months
+# idx <- rep(1:72, each=4)
+# 
+# # Create stack and combine all traffic types for each month into one layer
+# allstack <- raster::stack(files)
+# sumstack <- stackApply(allstack, indices = idx, fun=sum)
+# 
+# names(sumstack) <- seq(as.Date("2015-01-01"), as.Date("2020-12-01"), by="month")
+# 
+# raster::crs(sumstack) <- AA
+# 
+# # Load in sea ice extent data 
+# extlist <- as.list(list.files(paste0(wd, "Data_Raw/SeaIceExtent_20220103/"), pattern='.shp'))
+# 
+# extdates <- lapply(extlist, function(x){as.Date(paste0(substr(x, start=10, stop=15), "01"), format="%Y%m%d")})
+# 
+# extsf <- lapply(extlist, function(x){st_read(paste0(wd, "/Data_Raw/SeaIceExtent_20220103/", x)) %>% st_transform(AA)})
+# 
+# 
+# vesselinice <- function(trafficraster, extentsf){
+#   trafficraster_new <- raster::mask(trafficraster, aisbounds)
+#   extentsf_new <- st_crop(extentsf, aisbounds)
+#   masktraffic <- raster::mask(trafficraster, extentsf)
+#   return(masktraffic)
+# }
+# 
+# shipinice <- lapply(1:72, function(x){vesselinice(sumstack[[x]], extsf[[x]])})
+# shipinice <- raster::stack(shipinice)
 
 ########################################################################################################
 # Load in all SMOS data, reproject, aggregate to monthly average values, and save as rasters 
@@ -166,21 +169,47 @@ start <- proc.time()
 
 output <- lapply(1:length(smoslist), function(x){smosprocess(smoslist[[x]], llpolar=llpolar)})
 
-icecons <- sapply(output, "[[", 1) %>% 
+icecon <- sapply(output, "[[", 1) %>% 
   raster::stack() %>% 
   raster::crop(y=st_transform(aisbounds, prj)) %>% 
   raster::projectRaster(crs=AA, res = raster::res(.)) %>% 
-  raster::stackApply(indices=smosmonths, fun=mean)
-icethicks <- sapply(output, "[[", 2) %>% 
+  raster::stackApply(indices=smosmonths, fun=mean) %>% 
+  stars::st_as_stars() 
+icethick <- sapply(output, "[[", 2) %>% 
   raster::stack() %>% 
   raster::crop(y=st_transform(aisbounds, prj)) %>% 
   raster::projectRaster(crs=AA, res = raster::res(.)) %>% 
-  raster::stackApply(indices=smosmonths, fun=mean)
+  raster::stackApply(indices=smosmonths, fun=mean) %>% 
+  stars::st_as_stars() 
 
-writeRaster(icecons, "../Data_Processed/IceConcentration_SMOS.tif")
-saveRDS(icecons, "../Data_Processed/IceConcentration_SMOS.rds")
-writeRaster(icethicks, "../Data_Processed/IceThickness_SMOS.tif")
-saveRDS(icethicks, "../Data_Processed/IceThickness_SMOS.rds")
+
+# Give attribute names to concentration and thickness 
+icethick <- setNames(icethick, "thick")
+icecon <- setNames(icecon, "con")
+
+# Merge concentration and thickness into one stars object 
+icestars <- c(icecon, icethick)
+
+# Get band names (i.e. dates) from stars object 
+dates <- st_get_dimension_values(icestars, "band")
+# Convert to actual dates
+newdates <-  as.Date(paste0(substr(dates, 7,10),"-",substr(dates,11,12),"-01"), format="%Y-%m-%d")
+# Set third dimension of stars object to date 
+icestars <- st_set_dimensions(icestars, 3, values = newdates, name = "date")
+
+
+# Convert back to sf object 
+icesf <- st_as_sf(icestars) 
+# Prep new column names based on dates 
+cols <- c(paste0("con_",newdates), paste0("thick_", newdates),"geometry")
+# Rename columns (Otherwise it doesn't give the band names as columns for thickness, 
+# not sure why - maybe to avoid duplicates?)
+colnames(icesf) <- cols
+# Create id (matches ID from AISRasterization.R script...)
+icesf <- icesf %>% mutate(id=1:nrow(.)) 
+
+write_stars(icestars, "../Data_Processed/Ice_SMOS.tif")
+st_write(icesf, "../Data_Processed/Ice_SMOS.shp")
 
 proc.time() - start
 
