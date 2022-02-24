@@ -296,7 +296,6 @@ cryoprocess <- function(netcdf, llpolar, lyrname, newprj = AA, croparea = aisbou
   return(list(icecon, icethick))
 }
 
-
 start <- proc.time()
 
 # cryooutput <- lapply(1:length(cryolist), function(x){cryoprocess(cryolist[[x]], lyrname=cryodates[[x]], llpolar=llpolar)})
