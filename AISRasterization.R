@@ -19,8 +19,7 @@ idx <- paste0(substr(filelist, start=8, stop=11), substr(filelist, start=13, sto
 traffic <- lapply(unique(idx), function(x){do.call(rbind, files[which(idx == x)])})
 
 # Load in sea ice data & isolate just cell ids 
-icecon <- readRDS("../Data_Processed/IceConcentration_SMOS.rds")
-iceconsf <- icecon %>% stars::st_as_stars() %>% st_as_sf() %>% mutate(id=1:nrow(.)) %>% select(id)
+icecon <- st_read("../Data_Processed/Ice_SMOS.shp") %>% select(id)
 
 
 #######################################################################################
@@ -68,13 +67,19 @@ icepixellength <- function(trafficsf, icesf){
   int$newlen <- st_length(int)
   int$year <- as.numeric(substr(int$AIS_ID, start=11, stop =14))
   int$month <- as.numeric(substr(int$AIS_ID, start=15, stop =16))
-  intdf <- int %>% 
-            st_drop_geometry() %>%  
-            select(id, newlen, year, month) %>% 
-            group_by(id, year, month) %>% 
-            summarize(length=sum(newlen))
+  intdf <- int %>%
+    st_drop_geometry() %>%
+    select(id, newlen, year, month, MMSI_x, AIS_Typ) %>%
+    group_by(id, year, month) %>%
+    summarize(length=sum(newlen), 
+              nShips=length(unique(MMSI_x)), 
+              nCargo = length(unique(MMSI_x[which(AIS_Typ == "Cargo")])),
+              nFish = length(unique(MMSI_x[which(AIS_Typ == "Fishing")])),
+              nTank = length(unique(MMSI_x[which(AIS_Typ == "Tanker")])),
+              nOther = length(unique(MMSI_x[which(AIS_Typ == "Other")])))
   return(intdf)
 }
+
 
 # Takes ~15 minutes to run 
 trafficcellsa <- lapply(traffic[1:6], function(x){icepixellength(x, iceconsf)})
