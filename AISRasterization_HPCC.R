@@ -82,9 +82,14 @@ icepixellength <- function(trafficsf, icesf){
   int$month <- as.numeric(substr(int$AIS_ID, start=15, stop =16))
   intdf <- int %>%
             st_drop_geometry() %>%
-            select(id, newlen, year, month) %>%
+            select(id, newlen, year, month, MMSI_x, AIS_Typ) %>%
             group_by(id, year, month) %>%
-            summarize(length=sum(newlen))
+            summarize(length=sum(newlen), 
+                      nShips=length(unique(MMSI_x)), 
+                      nCargo = length(unique(MMSI_x[which(AIS_Typ == "Cargo")])),
+                      nFish = length(unique(MMSI_x[which(AIS_Typ == "Fishing")])),
+                      nTank = length(unique(MMSI_x[which(AIS_Typ == "Tanker")])),
+                      nOther = length(unique(MMSI_x[which(AIS_Typ == "Other")])))
   return(intdf)
 }
 
@@ -100,7 +105,7 @@ trafficcells <- foreach(j = 1:12,.packages = c("raster", "sf", "dplyr", "tidyr")
 
 # Bind together all months of data
 trafficcells <- do.call(rbind, trafficcells)
-write.csv(trafficcells, paste0("../Data_Processed/TrafficInIcePixels_", year, ".csv"))
+write.csv(trafficcells, paste0("../Data_Processed/TrafficInIcePixels_LenAndNShips", year, ".csv"))
 
 
 (proc.time()-start)/60
