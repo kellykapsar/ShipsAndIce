@@ -141,7 +141,7 @@ sigcells <- st_coordinates(st_centroid(modelresults[which(modelresults$p.value <
 
 p3 <- ggplot() +
   geom_sf(data=basemap.crop, fill="white", color="black", lwd=0.5, alpha = 0.9) +
-  geom_sf(data=aisbounds, fill=NA, color="black", lwd=1)+
+  # geom_sf(data=aisbounds, fill=NA, color="black", lwd=1)+
   geom_sf(data=modelresults, aes(fill=estimate)) +
   colorspace::scale_fill_continuous_divergingx("RdBu", name="", rev=T) +
   geom_point(data=sigcells, aes(x = sigcells[,1], y = sigcells[,2]), shape=8, size=0.1) +
@@ -153,7 +153,7 @@ p3 <- ggplot() +
   blank()+
   theme(legend.title = element_text(size = 20),
         legend.text = element_text(size = 20),
-        legend.position = c(0.05,0.125),
+        legend.position = c(0.1,0.2),
         legend.background = element_rect(fill = "white", color = "black"),
         axis.ticks = element_blank(),
         axis.text=element_blank(),
@@ -161,17 +161,189 @@ p3 <- ggplot() +
         panel.border =  element_rect(colour = "black"),
         panel.grid.major = element_line(colour = "transparent"))
 
-p3
-ggsave(plot=p3, filename= "../Data_Processed/KendallCorrelationMap_25obs.png", 
+# p3
+ggsave(plot=p3, filename= "../Figures/KendallCorrelationMap_25obs.png", 
        width=8, height=8, units="in", dpi = 300)
 
 
 
+############################################################################
+# Ice and traffic line plot 
+############################################################################
 
+monthstats <- alldf %>% group_by(year, month) %>% summarize(iceext = sum(ifelse(icecon >= 10, 1, 0))*622.109950, traffic_km = sum(traffic_km))
+
+monthstats$timestep <- ifelse(monthstats$month == 10, 1, 
+                              ifelse(monthstats$month == 11, 2, 
+                                     ifelse(monthstats$month == 12, 3, 
+                                            ifelse(monthstats$month == 1, 4, 
+                                                   ifelse(monthstats$month == 2, 5,
+                                                          ifelse(monthstats$month == 3, 6,
+                                                                 ifelse(monthstats$month == 4, 7, NA)))))))
+
+monthstats$traffic_1kkm <- monthstats$traffic_km/1000
+
+# Ice extent (average annual and maximum annual)
+annualiceext <- monthstats %>% group_by(year) %>% summarize(maxext = max(iceext))
+otherext <- annualiceext$maxext[which(annualiceext$maxext != min(annualiceext$maxext))]
+minext <- annualiceext$maxext[which(annualiceext$maxext == min(annualiceext$maxext))]
+round(((otherext-minext)/otherext)*100,2) # Percent difference in maximum ice extent between highest and lowest extent years 
+studyareasize_km2 <- sum(st_area(allsf))/1000000
+minext/studyareasize_km2
+
+
+coeff <- 3000 # median(monthstats$iceext/monthstats$traffic_1kkm)
+library(RColorBrewer)
+ggplot() +
+  geom_line(data=monthstats, aes(x=timestep, y =iceext, group=year, col=as.factor(year)),lwd=1.5,lty=2) +
+  geom_line(data=monthstats, aes(x=timestep, y = traffic_1kkm*coeff, group=year, col=as.factor(year)),lwd=1.5) +
+  scale_color_manual(labels=2015:2020, values=brewer.pal(7,"YlGnBu")[2:7], name="Year") + 
+  xlab("") +
+  scale_x_continuous(breaks=1:7, labels = c("Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr") ) +
+  scale_y_continuous(name = expression("Sea Ice Extent "~(km^2)),
+                     sec.axis = sec_axis(~./coeff, name = "Total Shipping Traffic (1000s km)")) +
+  theme_bw(base_size = 20) +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+
+
+ggsave("../Figures/IceAndAIS_MonthlyLines.png", width=9, height=6, units="in")
+
+############################################################################
+# Traffic in ice plot 
+############################################################################
+
+inice <- alldf[which(alldf$icecon > 0 & alldf$traffic_km > 0),]
+
+monthinice <- inice %>% group_by(year, month) %>% summarize(traffic_km = sum(traffic_km))
+
+monthinice$timestep <- ifelse(monthinice$month == 10, 1, 
+                              ifelse(monthinice$month == 11, 2, 
+                                     ifelse(monthinice$month == 12, 3, 
+                                            ifelse(monthinice$month == 1, 4, 
+                                                   ifelse(monthinice$month == 2, 5,
+                                                          ifelse(monthinice$month == 3, 6,
+                                                                 ifelse(monthinice$month == 4, 7, NA)))))))
+
+
+library(RColorBrewer)
+ggplot() +
+  geom_line(data=monthinice, aes(x=timestep, y =traffic_km, group=year, col=as.factor(year)),lwd=1.5) +
+  scale_color_manual(labels=2015:2020, values=brewer.pal(7,"YlGnBu")[2:7], name="Year") + 
+  xlab("") +
+  scale_x_continuous(breaks=1:7, labels = c("Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr") ) +
+  scale_y_continuous(name = "Total Vessel Traffic\nin Ice (km)") +
+  theme_bw(base_size = 20) +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+
+ggsave("../Figures/AISInIce_MonthlyLines.png", width=9, height=6, units="in")
+
+# Annual traffic totals in ice 
+yearinice <- monthinice %>% group_by(year) %>% summarize(traffic_km = sum(traffic_km))
+
+ggplot(yearinice, aes(x=year, y=traffic_km, fill=as.factor(year))) +
+  geom_bar(stat="identity") +
+  scale_fill_manual(labels=2015:2020, values=brewer.pal(7,"YlGnBu")[2:7], name="Year") +
+  scale_x_continuous(breaks= 2015:2020) +
+  scale_y_continuous(breaks=seq(0,300000, by=50000)) +
+  theme_bw(base_size = 20) +
+  xlab("") +
+  ylab("Total Vessel Traffic in Ice (km)") + 
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        legend.position = "none")
+ggsave("../Figures/AISInIce_AnnualBar.png", width=9, height=6, units="in")
+
+### Total vessel traffic in cells with >50% ice concentration 
+yearinlotsaice <- alldf[which(alldf$icecon > 50 & alldf$traffic_km > 0),] %>% group_by(year) %>% summarize(traffic_km = sum(traffic_km))
+
+ggplot(yearinlotsaice, aes(x=year, y=traffic_km, fill=as.factor(year))) +
+  geom_bar(stat="identity") +
+  scale_fill_manual(labels=2015:2020, values=brewer.pal(7,"YlGnBu")[2:7], name="Year") +
+  scale_x_continuous(breaks= 2015:2020) +
+  scale_y_continuous(breaks=seq(0,50000, by=10000)) +
+  theme_bw(base_size = 20) +
+  xlab("") +
+  ylab("Total Vessel Traffic\nin >50% Ice (km)") + 
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        legend.position = "none")
+ggsave("../Figures/AISInIce_AnnualBar.png", width=9, height=6, units="in")
+
+### Total vessel traffic in cells with 100% ice concentration is zero!  
+yearinallice <- alldf[which(alldf$icecon >= 99  & alldf$traffic_km > 0),] %>% group_by(year) %>% summarize(traffic_km = sum(traffic_km))
+
+
+# Line plot: Mean vessel traffic in occupied cells x ice concentration 
+trafficbyiceconsumms <- alldf[which(alldf$icecon > 0  & alldf$traffic_km > 0),] %>% 
+  filter(icecon > 0) %>% 
+  mutate(icecon = round(icecon, 0)) %>% 
+  group_by(icecon) %>% 
+  summarize(traffic_km = median(traffic_km), nShips= median(nShips), ncells=n())
+
+ggplot(trafficbyiceconsumms, aes(x=icecon, y=nShips)) +
+  geom_line() +
+  scale_x_continuous(breaks= seq(0,100,10)) +
+  theme_bw(base_size = 20) +
+  xlab("Sea Ice Concentration (%)") +
+  ylab("Median Vessel Traffic\nin Occupied Cells (km)") + 
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        legend.position = "none")
+
+# Box plot: vessel traffic in occupied cells x ice concentration 
+trafficbyicecon <- alldf[which(alldf$icecon > 0  & alldf$traffic_km > 0),] %>% 
+  filter(icecon > 0) %>% 
+  mutate(icecon = round(icecon, -1)) 
+
+ggplot(trafficbyicecon, aes(x=icecon, y=traffic_km, group=icecon)) +
+  geom_boxplot() +
+  theme_bw(base_size = 20) +
+  xlab("Sea Ice Concentration (%)") +
+  ylab("Vessel Traffic\nin Occupied Cells (km)") + 
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        legend.position = "none")
+
+# Proportion of cells occupied x ice concentration 
+propocc <- alldf %>% 
+  mutate(icecon = round(icecon, 0)) %>% 
+  group_by(icecon) %>% 
+  summarize(ncells=n(), nocc=length(which(nShips > 0))) %>% 
+  mutate(propocc = round(nocc/ncells*100, 2))
+
+ggplot(propocc, aes(x=icecon, y=propocc)) +
+  geom_line() +
+  scale_x_continuous(breaks= seq(0,100,10), expand = c(0, 0), limits = c(0,NA)) +
+  scale_y_continuous(breaks=seq(0,60,10), expand = c(0, 0), limits = c(0,60)) +
+  theme_bw(base_size = 20) +
+  xlab("Sea Ice Concentration (%)") +
+  ylab("Occupied Cells (%)") + 
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        legend.position = "none",
+        panel.border = element_blank(), 
+        axis.line = element_line())
+
+# Total traffic by ice concentration 
+test <- alldf %>% filter(icecon > 0) %>% mutate(icecon = round(icecon, 0)) %>% group_by(icecon) %>% summarize(traffic_km = mean(traffic_km), ncells=n())
+
+ggplot(test, aes(x=icecon, y=traffic_km)) +
+  geom_line() +
+  # scale_fill_manual(labels=2015:2020, values=brewer.pal(7,"YlGnBu")[2:7], name="Year") +
+  # scale_x_continuous(breaks= 2015:2020) +
+  # scale_y_continuous(breaks=seq(0,50000, by=10000)) +
+  theme_bw(base_size = 20) +
+  xlab("Sea Ice Concentration (%)") +
+  ylab("Mean Vessel Traffic\nin Occupied Cells (km)") + 
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        legend.position = "none")
 
 ############################
 
-inice <- alldf[which(alldf$icecon > 0 & alldf$traffic_km > 0),]
+
 
 
 hightraffids <- unique(inice$id[which(inice$traffic_km > 1000)])
