@@ -34,22 +34,22 @@ icesf <- st_read("../Data_Processed/Ice_SMOS.shp")
 icesf <- icesf %>% mutate_all(~replace_na(., 0))
 
 condf <-  icesf %>% 
-            dplyr::select(c(1:42), id) %>% 
-            st_drop_geometry() %>%
-            gather(key=yearmon, value=icecon, -id) %>%
-            mutate(year = as.numeric(substr(yearmon, start=3, stop=6)),
-                   month = as.numeric(substr(yearmon, start=8, stop=9)),
-                   icecon = round(icecon, 2)) %>%
-            dplyr::select(-yearmon)
+  dplyr::select(c(1:42), id) %>% 
+  st_drop_geometry() %>%
+  gather(key=yearmon, value=icecon, -id) %>%
+  mutate(year = as.numeric(substr(yearmon, start=3, stop=6)),
+         month = as.numeric(substr(yearmon, start=8, stop=9)),
+         icecon = round(icecon, 2)) %>%
+  dplyr::select(-yearmon)
 
 thickdf <-  icesf %>% 
-            dplyr::select(c(43:85), id) %>% 
-            st_drop_geometry() %>%
-            gather(key=yearmon, value=icethick, -id) %>%
-            mutate(year = as.numeric(substr(yearmon, start=3, stop=6)),
-                   month = as.numeric(substr(yearmon, start=8, stop=9)),
-                   icethick = round(icethick, 2)) %>%
-            dplyr::select(-yearmon)
+  dplyr::select(c(43:85), id) %>% 
+  st_drop_geometry() %>%
+  gather(key=yearmon, value=icethick, -id) %>%
+  mutate(year = as.numeric(substr(yearmon, start=3, stop=6)),
+         month = as.numeric(substr(yearmon, start=8, stop=9)),
+         icethick = round(icethick, 2)) %>%
+  dplyr::select(-yearmon)
 
 # Join thickness and concentration data frames 
 allice <- left_join(condf, thickdf, by=c("year", "month", "id"))
@@ -74,7 +74,7 @@ icethicksf <- allice %>%
   spread(date, icethick)
 
 colnames(icethicksf) <- c(colnames(icethicksf[1]), 
-                        paste0("t_", substr(colnames(icethicksf)[2:43], 1,4),"_",substr(colnames(icethicksf[2:43]),6,7)))
+                          paste0("t_", substr(colnames(icethicksf)[2:43], 1,4),"_",substr(colnames(icethicksf[2:43]),6,7)))
 allsf <- allsf %>% left_join(., icethicksf, by=c("id"))
 
 
@@ -103,7 +103,7 @@ nShipssf <- allpixels %>%
   spread(date, nShips)
 
 colnames(nShipssf) <- c(colnames(nShipssf[1]), 
-                         paste0("n_", substr(colnames(nShipssf)[2:73], 1,4),".",substr(colnames(nShipssf[2:73]),6,7)))
+                        paste0("n_", substr(colnames(nShipssf)[2:73], 1,4),".",substr(colnames(nShipssf[2:73]),6,7)))
 
 allsf <- left_join(allsf, nShipssf, by=c("id"))
 
