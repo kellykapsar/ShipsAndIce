@@ -10,6 +10,7 @@ library(ggplot2)
 library(yarrr)
 library(ggsn)
 library(colorspace)
+library(RColorBrewer)
 
 
 saveloc <- "../Figures/"
@@ -30,88 +31,42 @@ basemap.crop <- st_crop(basemap, st_buffer(aisbounds, 100000)) %>%
 #   st_intersection(aisbounds) %>% 
 #   st_write("../Data_Processed/MedianMarchIceExtent1981-2010.shp")
 
+#######################################################################
 # all sf == spatial data frame (each row is a unique cell)
 allsf <- st_read("../Data_Processed/IceTrafficDataFrame.shp")
-
-
-
-
-
-# plot(basemap.crop$geometry)
-# plot(test$geometry, add=T, col="red")
-# plot(allsf$geometry, add=T, border="green", col=NA)
-# 
-# 
-# linecells <- unlist(st_intersects(st_union(ext), allsf))
-# plot(allsf$geometry[linecells], add=T, border="purple", col=NA)
-# 
-# online <- as.data.frame(st_coordinates(st_centroid(allsf$geometry[linecells])))
-# 
-# allcoords <- as.data.frame(st_coordinates(st_centroid(allsf)))
-# 
-# aboveline <- function(linecentroids, cellcentroid){
-#   liney <- linecentroids[which(linecentroids$X == cellcentroid$X),]
-# }
-# 
-# 
-# plot(allsf$geometry[1], col="red", add=T)
-# length(unique(t$X))
-# length(unique(t$Y))
-# 
-# 
-# length(which(round(allcoords$X,0) %in% round(online$X, 0)))
-# 
-# 
-# plot(allsf$geometry[which(round(allcoords$X,0) %in% round(online$X, 0))], add=T, border="red")
-
+# studyoutline <- allsf %>% select(id) %>% st_union() %>% st_write("../Data_Processed/StudyOutline.shp")
 
 alldf <- read.csv("../Data_Processed/IceTrafficDataFrame.csv") %>% dplyr::select(-X)
 
+#######################################################################
+# Call in functions 
 
-fulldf <- expand.grid(year=2015:2020, month=1:12, id=unique(alldf$id))
-fulldf <- left_join(fulldf, alldf, by=c("year", "month", "id"))
+# DOESN'T WORK WITH MAP FUNCTION FOR SOME REASON.... 
+# Couldn't figure out how to make map function work with calling column names, 
+# so just made new functions for each column combo
+pizzolato <- function(df, traffcol, icecol){
+  traff <- df[{{traffcol}}]
+  ice <- df[{{icecol}}]
+  if(length(which(traff != 0)) == 0){
+    return(NA)
+  }
+  maxice <- max(ice[which(traff != 0),])
+  lotsaice <- which(ice > maxice & traff == 0)
+  keeplotsaice <- which(ice[lotsaice,] == min(ice[lotsaice,]))
+  lotsaicenew <- lotsaice[-keeplotsaice]
+  traffnew <- traff[-lotsaicenew,]
+  icenew <- ice[-lotsaicenew,]
+  if(length(traff) > 0){
+    cortest <- cor.test(traffnew, icenew, method="kendall")
+    return(cortest)
+  }
+  if(length(traff) <= 0){
+    return(NA)
+  }
+}
 
-fulldf$traffic_km[which(is.na(fulldf$traffic_km))] <- 0
-fulldf$nShips[which(is.na(fulldf$nShips))] <- 0
-fulldf$nCargo[which(is.na(fulldf$nCargo))] <- 0
-fulldf$nTank[which(is.na(fulldf$nTank))] <- 0
-fulldf$nFish[which(is.na(fulldf$nFish))] <- 0
-fulldf$nOther[which(is.na(fulldf$nOther))] <- 0
-
-
-# DECIDED NOT TO RUN TREND TEST BECAUSE WOULDN'T EXPECT CLIMATE-RELATED TRENDS OVER SIX YEARS... 
-# NOT SURE IF THAT'S A COMPLETELY VALID REASON.
-# Calculate de-trended values for sea ice concentration/thickness and vessel traffic 
-# test <- fulldf[-which(fulldf$month %in% c(5:9)),]
-# 
-# test$date <- as.Date(paste0(test$year,"-",test$month,"-01"), format="%Y-%m-%d")
-# test <- test[order(test$date),]
-# 
-# df <- data.frame(date= seq(as.Date("2015-01-01"),as.Date("2020-12-01"), by=c("month")), timestep=1:72)
-# test <- left_join(test, df, by=c("date"))
-# 
-# temp <- EnvStats::kendallSeasonalTrendTest(traffic_km ~ month + year, 
-#                                            data = subset(test, id == 2279))
-# 
-# library(zyp)
-# testone <- test[which(test$id == 2279),]
-# t <- zyp::zyp.trend.vector(testone$traffic_km, testone$timestep, method=c("zhang"))
-# 
-# preds <- (t["trend"]*testone$timestep + t["intercept"])
-# predslinear <- (t["linear"]*testone$timestep + t["intercept"])
-# 
-# resids <- testone$traffic_km-preds
-# 
-# plot(testone$timestep, testone$traffic_km)
-# lines(testone$timestep, preds, type="b", col="red")
-# lines(testone$timestep, predslinear, type="b", col="blue")
-# legend("topleft", legend=c("Zhang method", "Linear regression"),
-#        col=c("red", "blue"), lty = 1:2, cex=0.8)
-
-start <- proc.time()
-fulldfnest <- fulldf %>% group_by(id) %>% nest()
-
-pizzolato <- function(df){
+# Ice concentration and traffic 
+pizzolato_conkm <- function(df){
   if(length(which(df$traffic_km != 0)) == 0){
     return(NA)
   }
@@ -120,19 +75,167 @@ pizzolato <- function(df){
   keeplotsaice <- which(df$icecon[lotsaice] == min(df$icecon[lotsaice]))
   lotsaicenew <- lotsaice[-keeplotsaice]
   dfnew <- df[-lotsaicenew,]
-  if(length(dfnew$traffic_km) > 25){
+  if(length(dfnew$traffic_km) > 0){
     cortest <- cor.test(dfnew$traffic_km, dfnew$icecon, method="kendall")
     return(cortest)
   }
-  if(length(dfnew$traffic_km) <= 25){
+  if(length(dfnew$traffic_km) <= 0){
     return(NA)
   }
 }
 
-mods <- fulldfnest %>% mutate(cortest = map(data, function(df){pizzolato(df)}), 
-                              tidied = map(cortest, broom::tidy)) %>% 
+# Ice thickness and traffic
+pizzolato_thickkm <- function(df){
+  if(length(which(df$traffic_km != 0)) == 0){
+    return(NA)
+  }
+  maxice <- max(df$icethick[which(df$traffic_km != 0)])
+  lotsaice <- which(df$icethick > maxice & df$traffic_km == 0)
+  keeplotsaice <- which(df$icethick[lotsaice] == min(df$icethick[lotsaice]))
+  lotsaicenew <- lotsaice[-keeplotsaice]
+  dfnew <- df[-lotsaicenew,]
+  if(length(dfnew$traffic_km) > 0){
+    cortest <- cor.test(dfnew$traffic_km, dfnew$icethick, method="kendall")
+    return(cortest)
+  }
+  if(length(dfnew$traffic_km) <= 0){
+    return(NA)
+  }
+}
+
+# Ice concentration and number of ships
+pizzolato_connship <- function(df){
+  if(length(which(df$nShips != 0)) == 0){
+    return(NA)
+  }
+  maxice <- max(df$icecon[which(df$nShips != 0)])
+  lotsaice <- which(df$icecon > maxice & df$nShips == 0)
+  keeplotsaice <- which(df$icecon[lotsaice] == min(df$icecon[lotsaice]))
+  lotsaicenew <- lotsaice[-keeplotsaice]
+  dfnew <- df[-lotsaicenew,]
+  if(length(dfnew$nShips) > 0){
+    cortest <- cor.test(dfnew$nShips, dfnew$icecon, method="kendall")
+    return(cortest)
+  }
+  if(length(dfnew$nShips) <= 0){
+    return(NA)
+  }
+}
+
+# Ice thickness and number of ships
+pizzolato_thicknship <- function(df){
+  if(length(which(df$nShips != 0)) == 0){
+    return(NA)
+  }
+  maxice <- max(df$icethick[which(df$nShips != 0)])
+  lotsaice <- which(df$icethick > maxice & df$nShips == 0)
+  keeplotsaice <- which(df$icethick[lotsaice] == min(df$icethick[lotsaice]))
+  lotsaicenew <- lotsaice[-keeplotsaice]
+  dfnew <- df[-lotsaicenew,]
+  if(length(dfnew$nShips) > 0){
+    cortest <- cor.test(dfnew$nShips, dfnew$icethick, method="kendall")
+    return(cortest)
+  }
+  if(length(dfnew$nShips) <= 0){
+    return(NA)
+  }
+}
+
+plotKendall <- function(modsf, sigs, savename){
+  p3 <- ggplot() +
+    geom_sf(data=basemap.crop, fill="white", color="black", lwd=0.5, alpha = 0.9) +
+    # geom_sf(data=aisbounds, fill=NA, color="black", lwd=1)+
+    geom_sf(data=modsf, aes(fill=estimate)) +
+    colorspace::scale_fill_continuous_divergingx("RdBu", name="", rev=T) +
+    geom_point(data=sigs, aes(x = sigs[,1], y = sigs[,2]), shape=8, size=0.1) +
+    xlab("") +
+    ylab("") +
+    scale_x_continuous(expand = c(0, 0)) +
+    scale_y_continuous(expand = c(0, 0)) +
+    theme_bw() +
+    blank()+
+    theme(legend.title = element_text(size = 20),
+          legend.text = element_text(size = 20),
+          legend.position = c(0.1,0.2),
+          legend.background = element_rect(fill = "white", color = "black"),
+          axis.ticks = element_blank(),
+          axis.text=element_blank(),
+          # panel.background = element_rect(fill = "lightblue"),
+          panel.border =  element_rect(colour = "black"),
+          panel.grid.major = element_line(colour = "transparent"))
+  
+  # p3
+  ggsave(plot=p3, filename= paste0("../Figures/",savename,".png"), 
+         width=8, height=8, units="in", dpi = 300)
+}
+
+#######################################################################
+
+
+############################################################################
+# Kendall Correlation and Map
+############################################################################
+
+alldfnest <- alldf %>% group_by(id) %>% nest()
+
+### Ice con and total vessel traffic 
+mods <- alldfnest %>% 
+  mutate(cortest = map(data, function(df){pizzolato_conkm(df)}), 
+         tidied = map(cortest, broom::tidy)) %>% 
   unnest(tidied)
-proc.time() - start
+
+
+modelresults <- allsf %>% dplyr::select(id) %>% left_join(., mods[,c("id", "estimate", "statistic", "p.value")])
+sigcells <- st_coordinates(st_centroid(modelresults[which(modelresults$p.value < 0.05),])) %>% as.data.frame()
+plotKendall(modelresults, sigcells, "KendallCorrelationMap_ConKm")
+
+
+
+### Ice con and number of ships
+# mods <- alldfnest %>% 
+#   mutate(cortest = map(data, function(df){pizzolato_connship(df)}), 
+#          tidied = map(cortest, broom::tidy)) %>% 
+#   unnest(tidied)
+# 
+# 
+# modelresults <- allsf %>% dplyr::select(id) %>% left_join(., mods[,c("id", "estimate", "statistic", "p.value")])
+# sigcells <- st_coordinates(st_centroid(modelresults[which(modelresults$p.value < 0.05),])) %>% as.data.frame()
+# plotKendall(modelresults, sigcells, "KendallCorrelationMap_ConnShips")
+
+
+### Ice thickness and number of ships
+# mods <- alldfnest %>% 
+#   mutate(cortest = map(data, function(df){pizzolato_thicknship(df)}), 
+#          tidied = map(cortest, broom::tidy)) %>% 
+#   unnest(tidied)
+# 
+# 
+# modelresults <- allsf %>% dplyr::select(id) %>% left_join(., mods[,c("id", "estimate", "statistic", "p.value")])
+# sigcells <- st_coordinates(st_centroid(modelresults[which(modelresults$p.value < 0.05),])) %>% as.data.frame()
+# plotKendall(modelresults, sigcells, "KendallCorrelationMap_ThicknShips")
+
+### Ice thickness and total vessel traffic 
+# mods <- alldfnest %>% 
+#   mutate(cortest = map(data, function(df){pizzolato_thickkm(df)}), 
+#          tidied = map(cortest, broom::tidy)) %>% 
+#   unnest(tidied)
+# 
+# 
+# modelresults <- allsf %>% dplyr::select(id) %>% left_join(., mods[,c("id", "estimate", "statistic", "p.value")])
+# sigcells <- st_coordinates(st_centroid(modelresults[which(modelresults$p.value < 0.05),])) %>% as.data.frame()
+# plotKendall(modelresults, sigcells, "KendallCorrelationMap_ThickKm")
+
+
+############################################################################
+### Number of ships 
+
+fulldfnest <- alldf %>% group_by(id) %>% nest()
+
+mods <- alldfnest %>% 
+  mutate(cortest = map(data, function(df){pizzolato(df)}), 
+         tidied = map(cortest, broom::tidy)) %>% 
+  unnest(tidied)
+
 
 modelresults <- allsf %>% dplyr::select(id) %>% left_join(., mods[,c("id", "estimate", "statistic", "p.value")])
 sigcells <- st_coordinates(st_centroid(modelresults[which(modelresults$p.value < 0.05),])) %>% as.data.frame()
@@ -161,14 +264,12 @@ p3 <- ggplot() +
         panel.border =  element_rect(colour = "black"),
         panel.grid.major = element_line(colour = "transparent"))
 
-# p3
-ggsave(plot=p3, filename= "../Figures/KendallCorrelationMap_25obs.png", 
+p3
+ggsave(plot=p3, filename= "../Figures/KendallCorrelationMap.png", 
        width=8, height=8, units="in", dpi = 300)
 
-
-
 ############################################################################
-# Ice and traffic line plot 
+# Ice and traffic by month line plot 
 ############################################################################
 
 monthstats <- alldf %>% group_by(year, month) %>% summarize(iceext = sum(ifelse(icecon >= 10, 1, 0))*622.109950, traffic_km = sum(traffic_km))
@@ -192,8 +293,7 @@ studyareasize_km2 <- sum(st_area(allsf))/1000000
 minext/studyareasize_km2
 
 
-coeff <- 3000 # median(monthstats$iceext/monthstats$traffic_1kkm)
-library(RColorBrewer)
+coeff <- 2000 # median(monthstats$iceext/monthstats$traffic_1kkm)
 ggplot() +
   geom_line(data=monthstats, aes(x=timestep, y =iceext, group=year, col=as.factor(year)),lwd=1.5,lty=2) +
   geom_line(data=monthstats, aes(x=timestep, y = traffic_1kkm*coeff, group=year, col=as.factor(year)),lwd=1.5) +
@@ -201,16 +301,15 @@ ggplot() +
   xlab("") +
   scale_x_continuous(breaks=1:7, labels = c("Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr") ) +
   scale_y_continuous(name = expression("Sea Ice Extent "~(km^2)),
-                     sec.axis = sec_axis(~./coeff, name = "Total Shipping Traffic (1000s km)")) +
+                     sec.axis = sec_axis(~./coeff, name = "Total Vessel Traffic (1000s km)")) +
   theme_bw(base_size = 20) +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank())
 
-
 ggsave("../Figures/IceAndAIS_MonthlyLines.png", width=9, height=6, units="in")
 
 ############################################################################
-# Traffic in ice plot 
+# Traffic in ice line and bar plots  
 ############################################################################
 
 inice <- alldf[which(alldf$icecon > 0 & alldf$traffic_km > 0),]
@@ -269,10 +368,34 @@ ggplot(yearinlotsaice, aes(x=year, y=traffic_km, fill=as.factor(year))) +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
         legend.position = "none")
-ggsave("../Figures/AISInIce_AnnualBar.png", width=9, height=6, units="in")
+ggsave("../Figures/AISIn50Ice_AnnualBar.png", width=9, height=6, units="in")
+
+# Change in vessel traffic by ice concentration 
+totaltraff <- alldf %>% group_by(year) %>% summarize(traffic_km = sum(traffic_km))
+pctchangetotal <- round((totaltraff$traffic_km[totaltraff$year == 2020]-totaltraff$traffic_km[totaltraff$year == 2015])/totaltraff$traffic_km[totaltraff$year == 2020]*100,2)
+pctchangeinlotsaice <- round((yearinlotsaice$traffic_km[yearinlotsaice$year == 2020]-yearinlotsaice$traffic_km[yearinlotsaice$year == 2015])/yearinlotsaice$traffic_km[yearinlotsaice$year == 2020]*100,2)
+pctchangeinice <- round((yearinice$traffic_km[yearinice$year == 2020]-yearinice$traffic_km[yearinice$year == 2015])/yearinice$traffic_km[yearinice$year == 2020]*100,2)
+
+growthbyicecon <- alldf %>% 
+  filter(year %in% c(2015, 2020)) %>% 
+  mutate(icecon = round(icecon, -1)) %>% 
+  group_by(icecon, year) %>% 
+  summarize(traffic_km = sum(traffic_km)) %>% 
+  spread(key=year, value=traffic_km) %>% 
+  mutate(pctchange = round((`2020`-`2015`)/`2020`*100,2))
+
+ggplot(growthbyicecon, aes(x=icecon, y=pctchange)) +
+  geom_line() +
+  scale_x_continuous(breaks= seq(0,100,10)) +
+  theme_bw(base_size = 20) +
+  xlab("Sea Ice Concentration (%)") +
+  ylab("Change in vessel activity (2015-2020)") + 
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        legend.position = "none")
 
 ### Total vessel traffic in cells with 100% ice concentration is zero!  
-yearinallice <- alldf[which(alldf$icecon >= 99  & alldf$traffic_km > 0),] %>% group_by(year) %>% summarize(traffic_km = sum(traffic_km))
+yearinallice <- alldf[which(alldf$icecon >= 99  & alldf$traffic_km > 0),] %>% group_by(year) %>% summarize(traffic_km = sum(traffic_km)) 
 
 
 # Line plot: Mean vessel traffic in occupied cells x ice concentration 
@@ -423,7 +546,7 @@ ggsave(plot=p3, filename= "TestMap.png",
 ############################################################################
 # Pixel timeseries 
 ############################################################################
-fulldf$date <- as.Date(paste0(fulldf$year, "-", fulldf$month, "-1"), format="%Y-%m-%d")
+alldf$date <- as.Date(paste0(alldf$year, "-", alldf$month, "-1"), format="%Y-%m-%d")
 
 pixeltimeseries <- function(longdata, var, varlab, savedata=TRUE, plotdata=TRUE, name, saveloc){
   # Create custom labels for plot
@@ -450,10 +573,10 @@ pixeltimeseries <- function(longdata, var, varlab, savedata=TRUE, plotdata=TRUE,
                                   width=12, height=8, units="in"), NA)
 }
 
-pixeltimeseries(fulldf, plotdata = F, savedata=T, saveloc=saveloc, 
+pixeltimeseries(alldf, plotdata = F, savedata=T, saveloc=saveloc, 
                 name="Traffic_km", var= "traffic_km", varlab = "Total Vessel Traffic (km)")
 
-pixeltimeseries(fulldf, plotdata = F, savedata=T, saveloc=saveloc, 
+pixeltimeseries(alldf, plotdata = F, savedata=T, saveloc=saveloc, 
                 name="nShips", var= "nShips", varlab = "Number of Ships")
 
 
