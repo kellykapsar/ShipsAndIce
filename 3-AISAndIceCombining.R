@@ -81,8 +81,11 @@ allsf <- allsf %>% left_join(., icethicksf, by=c("id"))
 
 # Remove pixels with no ice for entire study period from data sets
 noice <- allice %>% group_by(id) %>% summarize(anyice = ifelse(sum(icecon > 0), TRUE, FALSE)) %>% filter(anyice == FALSE)
+
 allice <- allice[which(!(allice$id %in% noice$id)),]
+
 allsf <- allsf[which(!(allsf$id %in% noice$id)),]
+
 allpixels <- allpixels[which(!(allpixels$id %in% noice$id)),]
 
 # cor.test(allice$icethick, allice$icecon)
@@ -117,8 +120,8 @@ colnames(trafficsf) <- c(colnames(trafficsf[1]),
                          paste0("v_", substr(colnames(trafficsf)[2:73], 1,4),".",substr(colnames(trafficsf[2:73]),6,7)))
 
 allsf <- left_join(allsf, trafficsf, by=c("id"))
-alldf <- alldf[which(alldf$id %in% unique(allsf$id)),]
 
+# Replace NAs with zeros 
 alldf$traffic_km[which(is.na(alldf$traffic_km))] <- 0
 alldf$nShips[which(is.na(alldf$nShips))] <- 0
 alldf$nCargo[which(is.na(alldf$nCargo))] <- 0
@@ -129,6 +132,9 @@ alldf$nOther[which(is.na(alldf$nOther))] <- 0
 # Remove pixels outside the study area
 incells <- st_contains(aisbounds, allsf, sparse=FALSE)
 allsfin <- allsf[incells,]
+
+# Remove cells outside AIS boundaries from data frame 
+alldf <- alldf[which(alldf$id %in% unique(allsfin$id)),]
 
 # alldf == non-spatial data frame (each row is a unique cell, month, year combo)
 write.csv(alldf, "../Data_Processed/IceTrafficDataFrame.csv")
