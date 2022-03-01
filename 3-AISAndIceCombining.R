@@ -10,7 +10,11 @@ origmethod <- list.files("../Data_Processed/", pattern="LenAndNShips")
 origmethod <- lapply(origmethod, function(x){read.csv(paste0("../Data_Processed/",x))})
 origmethod <- do.call(rbind, origmethod)
 origmethod$traffic_km <- origmethod$length/1000
-origmethod <- origmethod %>% dplyr::select(-length) 
+origmethod$carg_km <- origmethod$CargoDist/1000
+origmethod$tank_km <- origmethod$TankDist/1000
+origmethod$other_km <- origmethod$OtherDist/1000
+origmethod$fish_km <- origmethod$FishDist/1000
+origmethod <- origmethod %>% dplyr::select(-length, -CargoDist, -FishDist, -TankDist, -OtherDist) 
 
 allpixels <- origmethod %>% dplyr::select(-X)
 allpixels <- allpixels[-which(allpixels$year == -201),]
@@ -55,8 +59,8 @@ thickdf <-  icesf %>%
 allice <- left_join(condf, thickdf, by=c("year", "month", "id"))
 
 # Assume any ice concentration < 10% is no ice 
-allice$icecon <- ifelse(allice$icecon < 10, 0, allice$icecon)
-allice$icethick <- ifelse(allice$icecon < 10, 0, allice$icethick)
+allice$icecon <- ifelse(allice$icecon < 15, 0, allice$icecon)
+allice$icethick <- ifelse(allice$icecon < 15, 0, allice$icethick)
 
 # Revise sf object to adhere to 10% threshold
 iceconsf <- allice %>% 
@@ -92,10 +96,16 @@ allpixels <- allpixels[which(!(allpixels$id %in% noice$id)),]
 
 # Joine ice data with vessel traffic data 
 alldf <-left_join(allice, allpixels, by=c("year", "month", "id"))
-alldf <- alldf[,c("year", "month", "id", "icecon", "icethick","traffic_km", "nShips", "nCargo", "nFish", "nTank", "nOther")]
+alldf <- alldf[,c("year", "month", "id", "icecon", "icethick",
+                  "traffic_km", "carg_km", "fish_km", "tank_km", "other_km",
+                  "nShips", "nCargo", "nFish", "nTank", "nOther")]
 
 # alldf$traffic_km[which(is.na(alldf$traffic_km))] <- 0
 alldf$traffic_km <- round(alldf$traffic_km, 2)
+alldf$carg_km <- round(alldf$carg_km, 2)
+alldf$fish_km <- round(alldf$fish_km, 2)
+alldf$tank_km <- round(alldf$tank_km, 2)
+alldf$other_km <- round(alldf$other_km, 2)
 
 # write.csv(alldf, "../Data_Processed/TrafficAndIcePixelValues.csv")
 
@@ -113,7 +123,7 @@ allsf <- left_join(allsf, nShipssf, by=c("id"))
 # Add nShips onto spatial object 
 trafficsf <- allpixels %>% 
   mutate(date=as.Date(paste0(year,"-",month,"-1"), format="%Y-%m-%d")) %>% 
-  dplyr::select(-year, -month, -nShips, -nCargo, -nFish, -nTank, -nOther) %>%  
+  dplyr::select(id, date, traffic_km) %>%  
   spread(date, traffic_km)
 
 colnames(trafficsf) <- c(colnames(trafficsf[1]), 
@@ -123,6 +133,10 @@ allsf <- left_join(allsf, trafficsf, by=c("id"))
 
 # Replace NAs with zeros 
 alldf$traffic_km[which(is.na(alldf$traffic_km))] <- 0
+alldf$carg_km[which(is.na(alldf$carg_km))] <- 0
+alldf$tank_km[which(is.na(alldf$tank_km))] <- 0
+alldf$fish_km[which(is.na(alldf$fish_km))] <- 0
+alldf$other_km[which(is.na(alldf$other_km))] <- 0
 alldf$nShips[which(is.na(alldf$nShips))] <- 0
 alldf$nCargo[which(is.na(alldf$nCargo))] <- 0
 alldf$nTank[which(is.na(alldf$nTank))] <- 0
