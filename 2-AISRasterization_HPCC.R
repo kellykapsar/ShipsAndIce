@@ -89,7 +89,11 @@ icepixellength <- function(trafficsf, icesf){
                       nCargo = length(unique(MMSI_x[which(AIS_Typ == "Cargo")])),
                       nFish = length(unique(MMSI_x[which(AIS_Typ == "Fishing")])),
                       nTank = length(unique(MMSI_x[which(AIS_Typ == "Tanker")])),
-                      nOther = length(unique(MMSI_x[which(AIS_Typ == "Other")])))
+                      nOther = length(unique(MMSI_x[which(AIS_Typ == "Other")])),
+                      CargoDist = sum(newlen[which(AIS_Typ == "Cargo")]),
+                      FishDist = sum(newlen[which(AIS_Typ == "Fishing")]),
+                      TankDist = sum(newlen[which(AIS_Typ == "Tanker")]),
+                      OtherDist = sum(newlen[which(AIS_Typ == "Other")]))
   return(intdf)
 }
 
