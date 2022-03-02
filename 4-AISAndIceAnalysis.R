@@ -194,51 +194,51 @@ mods <- alldfnest %>%
 
 modelresults <- allsf %>% dplyr::select(id) %>% left_join(., mods[,c("id", "estimate", "statistic", "p.value")])
 sigcells <- st_coordinates(st_centroid(modelresults[which(modelresults$p.value < 0.05),])) %>% as.data.frame()
-# plotKendall(modelresults, sigcells, "KendallCorrelationMap_ConKm")
+plotKendall(modelresults, sigcells, "KendallCorrelationMap_ConKm")
 
 # Percent of significant pixels with negative correlation coefficients 
 sum(modelresults$estimate[which(modelresults$p.value < 0.05)] <0)/length(modelresults$estimate[which(modelresults$p.value < 0.05)])
 
-# ### Ice con and number of ships
-# mods <- alldfnest %>%
-#   mutate(cortest = map(data, function(df){pizzolato_connship(df)}),
-#          tidied = map(cortest, broom::tidy)) %>%
-#   unnest(tidied)
-# 
-# 
-# modelresults <- allsf %>% dplyr::select(id) %>% left_join(., mods[,c("id", "estimate", "statistic", "p.value")])
-# sigcells <- st_coordinates(st_centroid(modelresults[which(modelresults$p.value < 0.05),])) %>% as.data.frame()
-# plotKendall(modelresults, sigcells, "KendallCorrelationMap_ConnShips")
-# 
-# 
-# ### Ice thickness and number of ships
-# mods <- alldfnest %>%
-#   mutate(cortest = map(data, function(df){pizzolato_thicknship(df)}),
-#          tidied = map(cortest, broom::tidy)) %>%
-#   unnest(tidied)
-# 
-# 
-# modelresults <- allsf %>% dplyr::select(id) %>% left_join(., mods[,c("id", "estimate", "statistic", "p.value")])
-# sigcells <- st_coordinates(st_centroid(modelresults[which(modelresults$p.value < 0.05),])) %>% as.data.frame()
-# plotKendall(modelresults, sigcells, "KendallCorrelationMap_ThicknShips")
-# 
-# ### Ice thickness and total vessel traffic
-# mods <- alldfnest %>%
-#   mutate(cortest = map(data, function(df){pizzolato_thickkm(df)}),
-#          tidied = map(cortest, broom::tidy)) %>%
-#   unnest(tidied)
-# 
-# 
-# modelresults <- allsf %>% dplyr::select(id) %>% left_join(., mods[,c("id", "estimate", "statistic", "p.value")])
-# sigcells <- st_coordinates(st_centroid(modelresults[which(modelresults$p.value < 0.05),])) %>% as.data.frame()
-# plotKendall(modelresults, sigcells, "KendallCorrelationMap_ThickKm")
+### Ice con and number of ships
+mods <- alldfnest %>%
+  mutate(cortest = map(data, function(df){pizzolato_connship(df)}),
+         tidied = map(cortest, broom::tidy)) %>%
+  unnest(tidied)
+
+
+modelresults <- allsf %>% dplyr::select(id) %>% left_join(., mods[,c("id", "estimate", "statistic", "p.value")])
+sigcells <- st_coordinates(st_centroid(modelresults[which(modelresults$p.value < 0.05),])) %>% as.data.frame()
+plotKendall(modelresults, sigcells, "KendallCorrelationMap_ConnShips")
+
+
+### Ice thickness and number of ships
+mods <- alldfnest %>%
+  mutate(cortest = map(data, function(df){pizzolato_thicknship(df)}),
+         tidied = map(cortest, broom::tidy)) %>%
+  unnest(tidied)
+
+
+modelresults <- allsf %>% dplyr::select(id) %>% left_join(., mods[,c("id", "estimate", "statistic", "p.value")])
+sigcells <- st_coordinates(st_centroid(modelresults[which(modelresults$p.value < 0.05),])) %>% as.data.frame()
+plotKendall(modelresults, sigcells, "KendallCorrelationMap_ThicknShips")
+
+### Ice thickness and total vessel traffic
+mods <- alldfnest %>%
+  mutate(cortest = map(data, function(df){pizzolato_thickkm(df)}),
+         tidied = map(cortest, broom::tidy)) %>%
+  unnest(tidied)
+
+
+modelresults <- allsf %>% dplyr::select(id) %>% left_join(., mods[,c("id", "estimate", "statistic", "p.value")])
+sigcells <- st_coordinates(st_centroid(modelresults[which(modelresults$p.value < 0.05),])) %>% as.data.frame()
+plotKendall(modelresults, sigcells, "KendallCorrelationMap_ThickKm")
 
 
 ############################################################################
 # Ice and traffic by month line plot 
 ############################################################################
 
-monthstats <- alldf %>% group_by(year, month) %>% summarize(iceext = sum(ifelse(icecon >= 10, 1, 0))*622.109950, traffic_km = sum(traffic_km), nShips = sum(nShips))
+monthstats <- alldf %>% group_by(year, month) %>% summarize(iceext = sum(ifelse(icecon >= 15, 1, 0))*622.109950, traffic_km = sum(traffic_km), nShips = sum(nShips))
 
 monthstats$timestep <- ifelse(monthstats$month == 10, 1, 
                               ifelse(monthstats$month == 11, 2, 
@@ -272,7 +272,7 @@ ggplot() +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank())
 
-# ggsave("../Figures/IceAndAIS_MonthlyLines.png", width=9, height=6, units="in")
+ggsave("../Figures/IceAndAIS_MonthlyLines.png", width=9, height=6, units="in")
 
 ############################################################################
 # Traffic in ice line and bar plots  
@@ -320,7 +320,7 @@ ggplot(yearinice, aes(x=year, y=traffic_km, fill=as.factor(year))) +
 # ggsave("../Figures/AISInIce_AnnualBar.png", width=9, height=6, units="in")
 
 ### Total vessel traffic in cells with >50% ice concentration 
-yearinlotsaice <- alldf[which(alldf$icecon > 50 & alldf$traffic_km > 0),] %>% group_by(year) %>% summarize(traffic_km = sum(traffic_km))
+yearinlotsaice <- alldf[which(alldf$icecon > 80 & alldf$traffic_km > 0),] %>% group_by(year) %>% summarize(traffic_km = sum(traffic_km))
 
 ggplot(yearinlotsaice, aes(x=year, y=traffic_km, fill=as.factor(year))) +
   geom_bar(stat="identity") +
@@ -440,54 +440,54 @@ ggplot(test, aes(x=icecon, y=traffic_km)) +
         legend.position = "none", 
         panel.border = element_blank(), 
         axis.line = element_line())
-# ggsave("../Figures/VesselTrafficbyIceCon_Lineplot.png", width=9, height=6, units="in")
+ggsave("../Figures/VesselTrafficbyIceCon_Lineplot.png", width=9, height=6, units="in")
 
 ############################
 
-ice10pixels <- inice %>% group_by(id) %>% summarize(traffic_km = sum(traffic_km))
-ice10sf <- allsf %>% filter(id %in% ice10pixels$id) %>% mutate(ice10traff = ice10pixels$traffic_km)
+ice15pixels <- inice %>% group_by(id) %>% summarize(traffic_km = sum(traffic_km))
+ice15sf <- allsf %>% filter(id %in% ice15pixels$id) %>% mutate(ice15traff = ice15pixels$traffic_km)
 
-min = min(ice10sf$ice10traff)
-max = max(ice10sf$ice10traff)
+min = min(ice15sf$ice15traff)
+max = max(ice15sf$ice15traff)
 diff <- max - min
-std = sd(ice10sf$ice10traff)
+std = sd(ice15sf$ice15traff)
 
 equal.interval = round(seq(min, max, by = diff/6), 0)
-quantile.interval = round(quantile(ice10sf$ice10traff, probs=seq(0, 1, by = 1/6)), 0)
+quantile.interval = round(quantile(ice15sf$ice15traff, probs=seq(0, 1, by = 1/6)), 0)
 std.interval = round(c(seq(min, max, by=std), max), 0)
-natural.interval = round(classInt::classIntervals(ice10sf$ice10traff, n = 6, style = 'jenks')$brks,0)
+natural.interval = round(classInt::classIntervals(ice15sf$ice15traff, n = 6, style = 'jenks')$brks,0)
 
-ice10sf$ice10traff.equal = cut(ice10sf$ice10traff, breaks=equal.interval, include.lowest = TRUE)
-ice10sf$ice10traff.quantile = cut(ice10sf$ice10traff, breaks=quantile.interval, include.lowest = TRUE)
-ice10sf$ice10traff.std = cut(ice10sf$ice10traff, breaks=std.interval, include.lowest = TRUE)
-ice10sf$ice10traff.natural = cut(ice10sf$ice10traff, breaks=natural.interval, include.lowest = TRUE)
+ice15sf$ice15traff.equal = cut(ice15sf$ice15traff, breaks=equal.interval, include.lowest = TRUE)
+ice15sf$ice15traff.quantile = cut(ice15sf$ice15traff, breaks=quantile.interval, include.lowest = TRUE)
+ice15sf$ice15traff.std = cut(ice15sf$ice15traff, breaks=std.interval, include.lowest = TRUE)
+ice15sf$ice15traff.natural = cut(ice15sf$ice15traff, breaks=natural.interval, include.lowest = TRUE)
 
 
-ice50pixels <- inice %>% filter(icecon >= 50) %>% group_by(id) %>% summarize(traffic_km = sum(traffic_km))
-ice50sf <- allsf %>% filter(id %in% ice50pixels$id) %>% mutate(ice50traff = ice50pixels$traffic_km)
+ice80pixels <- inice %>% filter(icecon >= 50) %>% group_by(id) %>% summarize(traffic_km = sum(traffic_km))
+ice80sf <- allsf %>% filter(id %in% ice80pixels$id) %>% mutate(ice80traff = ice80pixels$traffic_km)
 
-min = min(ice50sf$ice50traff)
-max = max(ice50sf$ice50traff)
+min = min(ice80sf$ice80traff)
+max = max(ice80sf$ice80traff)
 diff <- max - min
-std = sd(ice50sf$ice50traff)
+std = sd(ice80sf$ice80traff)
 
 equal.interval = round(seq(min, max, by = diff/6), 0)
-quantile.interval = round(quantile(ice50sf$ice50traff, probs=seq(0, 1, by = 1/6)), 0)
+quantile.interval = round(quantile(ice80sf$ice80traff, probs=seq(0, 1, by = 1/6)), 0)
 std.interval = round(c(seq(min, max, by=std), max), 0)
-natural.interval = round(classInt::classIntervals(ice50sf$ice50traff, n = 6, style = 'jenks')$brks,0)
+natural.interval = round(classInt::classIntervals(ice80sf$ice80traff, n = 6, style = 'jenks')$brks,0)
 
-ice50sf$ice50traff.equal = cut(ice50sf$ice50traff, breaks=equal.interval, include.lowest = TRUE)
-ice50sf$ice50traff.quantile = cut(ice50sf$ice50traff, breaks=quantile.interval, include.lowest = TRUE)
-ice50sf$ice50traff.std = cut(ice50sf$ice50traff, breaks=std.interval, include.lowest = TRUE)
-ice50sf$ice50traff.natural = cut(ice50sf$ice50traff, breaks=natural.interval, include.lowest = TRUE)
+ice80sf$ice80traff.equal = cut(ice80sf$ice80traff, breaks=equal.interval, include.lowest = TRUE)
+ice80sf$ice80traff.quantile = cut(ice80sf$ice80traff, breaks=quantile.interval, include.lowest = TRUE)
+ice80sf$ice80traff.std = cut(ice80sf$ice80traff, breaks=std.interval, include.lowest = TRUE)
+ice80sf$ice80traff.natural = cut(ice80sf$ice80traff, breaks=natural.interval, include.lowest = TRUE)
 
 
 ggplot() +
-  # geom_sf(data=basemap.crop, fill="white", color="black", lwd=0.5, alpha = 0.9) +
+  geom_sf(data=basemap.crop, fill="white", color="black", lwd=0.5, alpha = 0.9) +
   geom_sf(data=allsf$geometry, fill=NA) +
-  geom_sf(data=ice50sf,aes(fill=ice50traff.quantile)) +
+  geom_sf(data=ice15sf,aes(fill=ice15traff.quantile)) +
   scale_fill_manual(values=brewer.pal(7,"YlGnBu"), name="Total Traffic (km)") +
-  geom_sf(data=ice50sf$geometry[ice50sf$ice50traff > 1000], fill="red") +
+  # geom_sf(data=ice50sf$geometry[ice50sf$ice50traff > 1000], fill="red") +
   xlab("") +
   ylab("") +
   scale_x_continuous(expand = c(0, 0)) +
@@ -504,7 +504,7 @@ ggplot() +
         panel.border =  element_rect(colour = "black"),
         panel.grid.major = element_line(colour = "transparent"))
 
-ggsave(filename= "../Figures/InIce50_Quantile.png", 
+ggsave(filename= "../Figures/InIce15_Quantile.png", 
        width=8, height=8, units="in", dpi=300)
 
 
