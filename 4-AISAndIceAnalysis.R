@@ -19,13 +19,6 @@ saveloc <- "../Figures/"
 # Projection (Alaska Albers)
 AA <- "+proj=aea +lat_1=55 +lat_2=65 +lat_0=50 +lon_0=-154 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
 
-# Basemap
-aisbounds <- st_read("../Data_Raw/ais_reshape.shp") %>% st_transform(AA)
-basemap <- read_sf("../Data_Raw/AK_CAN_RUS/AK_CAN_RUS.shp") %>% 
-  st_transform(AA)
-basemap.crop <- st_crop(basemap, st_buffer(aisbounds, 100000)) %>% 
-  st_simplify(dTolerance=1000, preserveTopology = T)
-
 # Median sea ice extent 1981-2010
 # ext <- st_read("../Data_Raw/median_extent_N_03_1981-2010_polyline_v3.0/median_extent_N_03_1981-2010_polyline_v3.0.shp") %>% 
 #   st_transform(AA) %>% 
@@ -44,6 +37,12 @@ portcells <- c(1983, 4214, 4168, 2202, 2053, 2054, 2442, 2443, 2516, 2517)
 alldf <- alldf[-which(alldf$id %in% portcells),]
 allsf <- allsf[-which(allsf$id %in% portcells),]
 
+# Basemap
+# aisbounds <- st_read("../Data_Raw/ais_reshape.shp") %>% st_transform(AA)
+basemap <- read_sf("../Data_Raw/AK_CAN_RUS/AK_CAN_RUS.shp") %>% 
+  st_transform(AA)
+basemap.crop <- st_crop(basemap, st_buffer(allsf, 10000)) %>% 
+  st_simplify(dTolerance=1000, preserveTopology = T)
 
 #######################################################################
 # Call in functions 
@@ -194,45 +193,50 @@ mods <- alldfnest %>%
 
 modelresults <- allsf %>% dplyr::select(id) %>% left_join(., mods[,c("id", "estimate", "statistic", "p.value")])
 sigcells <- st_coordinates(st_centroid(modelresults[which(modelresults$p.value < 0.05),])) %>% as.data.frame()
-plotKendall(modelresults, sigcells, "KendallCorrelationMap_ConKm")
+# plotKendall(modelresults, sigcells, "KendallCorrelationMap_ConKm")
 
 # Percent of significant pixels with negative correlation coefficients 
 sum(modelresults$estimate[which(modelresults$p.value < 0.05)] <0)/length(modelresults$estimate[which(modelresults$p.value < 0.05)])
 
-### Ice con and number of ships
-mods <- alldfnest %>%
-  mutate(cortest = map(data, function(df){pizzolato_connship(df)}),
-         tidied = map(cortest, broom::tidy)) %>%
-  unnest(tidied)
+# ### Ice con and number of ships
+# mods <- alldfnest %>%
+#   mutate(cortest = map(data, function(df){pizzolato_connship(df)}),
+#          tidied = map(cortest, broom::tidy)) %>%
+#   unnest(tidied)
+# 
+# 
+# modelresults <- allsf %>% dplyr::select(id) %>% left_join(., mods[,c("id", "estimate", "statistic", "p.value")])
+# sigcells <- st_coordinates(st_centroid(modelresults[which(modelresults$p.value < 0.05),])) %>% as.data.frame()
+# plotKendall(modelresults, sigcells, "KendallCorrelationMap_ConnShips")
 
 
-modelresults <- allsf %>% dplyr::select(id) %>% left_join(., mods[,c("id", "estimate", "statistic", "p.value")])
-sigcells <- st_coordinates(st_centroid(modelresults[which(modelresults$p.value < 0.05),])) %>% as.data.frame()
-plotKendall(modelresults, sigcells, "KendallCorrelationMap_ConnShips")
+# ### Ice thickness and number of ships
+# mods <- alldfnest %>%
+#   mutate(cortest = map(data, function(df){pizzolato_thicknship(df)}),
+#          tidied = map(cortest, broom::tidy)) %>%
+#   unnest(tidied)
+# 
+# 
+# modelresults <- allsf %>% dplyr::select(id) %>% left_join(., mods[,c("id", "estimate", "statistic", "p.value")])
+# sigcells <- st_coordinates(st_centroid(modelresults[which(modelresults$p.value < 0.05),])) %>% as.data.frame()
+# plotKendall(modelresults, sigcells, "KendallCorrelationMap_ThicknShips")
+# 
+# ### Ice thickness and total vessel traffic
+# mods <- alldfnest %>%
+#   mutate(cortest = map(data, function(df){pizzolato_thickkm(df)}),
+#          tidied = map(cortest, broom::tidy)) %>%
+#   unnest(tidied)
+# 
+# 
+# modelresults <- allsf %>% dplyr::select(id) %>% left_join(., mods[,c("id", "estimate", "statistic", "p.value")])
+# sigcells <- st_coordinates(st_centroid(modelresults[which(modelresults$p.value < 0.05),])) %>% as.data.frame()
+# plotKendall(modelresults, sigcells, "KendallCorrelationMap_ThickKm")
 
-
-### Ice thickness and number of ships
-mods <- alldfnest %>%
-  mutate(cortest = map(data, function(df){pizzolato_thicknship(df)}),
-         tidied = map(cortest, broom::tidy)) %>%
-  unnest(tidied)
-
-
-modelresults <- allsf %>% dplyr::select(id) %>% left_join(., mods[,c("id", "estimate", "statistic", "p.value")])
-sigcells <- st_coordinates(st_centroid(modelresults[which(modelresults$p.value < 0.05),])) %>% as.data.frame()
-plotKendall(modelresults, sigcells, "KendallCorrelationMap_ThicknShips")
-
-### Ice thickness and total vessel traffic
-mods <- alldfnest %>%
-  mutate(cortest = map(data, function(df){pizzolato_thickkm(df)}),
-         tidied = map(cortest, broom::tidy)) %>%
-  unnest(tidied)
-
-
-modelresults <- allsf %>% dplyr::select(id) %>% left_join(., mods[,c("id", "estimate", "statistic", "p.value")])
-sigcells <- st_coordinates(st_centroid(modelresults[which(modelresults$p.value < 0.05),])) %>% as.data.frame()
-plotKendall(modelresults, sigcells, "KendallCorrelationMap_ThickKm")
-
+############################################################################
+# Case study 
+############################################################################
+# 
+alldf %>% filter(id == 1626) %>% group_by(year) %>% summarize(traffic_km = sum(traffic_km))
 
 ############################################################################
 # Ice and traffic by month line plot 
@@ -272,10 +276,10 @@ ggplot() +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank())
 
-ggsave("../Figures/IceAndAIS_MonthlyLines.png", width=9, height=6, units="in")
+# ggsave("../Figures/IceAndAIS_MonthlyLines.png", width=9, height=6, units="in")
 
 ############################################################################
-# Traffic in ice line and bar plots  
+# Traffic in ice by months - LINE CHART 
 ############################################################################
 
 inice <- alldf[which(alldf$icecon > 0 & alldf$traffic_km > 0),]
@@ -303,43 +307,98 @@ ggplot() +
 
 # ggsave("../Figures/AISInIce_MonthlyLines.png", width=9, height=6, units="in")
 
-# Annual traffic totals in ice 
-yearinice <- monthinice %>% group_by(year) %>% summarize(traffic_km = sum(traffic_km))
+##################################################################################
+# Annual traffic totals - BAR CHARTS 
+##################################################################################
 
-ggplot(yearinice, aes(x=year, y=traffic_km, fill=as.factor(year))) +
+# Annual traffic totals in ice 
+yearinMIZ <- alldf %>% filter(icecon > 0, icecon < 80, traffic_km > 0) %>% 
+  group_by(year) %>% 
+  summarize(traffic_km = sum(traffic_km),
+            totcarg_km = sum(carg_km), 
+            totfish_km = sum(fish_km),
+            tottank_km = sum(tank_km), 
+            totother_km = sum(other_km),
+            ncells=n())
+
+ggplot(yearinMIZ, aes(x=year, y=traffic_km, fill=as.factor(year))) +
   geom_bar(stat="identity") +
   scale_fill_manual(labels=2015:2020, values=brewer.pal(7,"YlGnBu")[2:7], name="Year") +
   scale_x_continuous(breaks= 2015:2020) +
   scale_y_continuous(breaks=seq(0,300000, by=50000)) +
   theme_bw(base_size = 20) +
   xlab("") +
-  ylab("Total Vessel Traffic in Ice (km)") + 
+  ylab("Total Vessel Traffic\nin Marginal Ice Zone (km)") + 
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
         legend.position = "none")
-# ggsave("../Figures/AISInIce_AnnualBar.png", width=9, height=6, units="in")
+ggsave("../Figures/AISInMIZ_AnnualBar.png", width=9, height=6, units="in")
+
+yearinMIZlong <- yearinMIZlong %>% 
+  select(year, totcarg_km, tottank_km, totfish_km, totother_km) %>% 
+  gather(-year, key=type, value=distance)
+
+ggplot(yearinMIZlong, aes(x=year, y=distance, fill=type)) +
+  geom_bar(stat="identity", position="stack") +
+  scale_fill_manual(values=qualitative_hcl(4, palette = "Dynamic"), name="Vessel Type", labels=c("Cargo", "Fishing", "Other", "Tanker")) +
+  scale_x_continuous(breaks= 2015:2020) +
+  # scale_y_continuous(breaks=seq(0,50000, by=10000)) +
+  theme_bw(base_size = 20) +
+  xlab("") +
+  ylab("Total Vessel Traffic\nin Marginal Ice Zone (km)") + 
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+ggsave("../Figures/AISInMIZIce_Types_AnnualBar.png", width=9, height=6, units="in")
 
 ### Total vessel traffic in cells with >50% ice concentration 
-yearinlotsaice <- alldf[which(alldf$icecon > 80 & alldf$traffic_km > 0),] %>% group_by(year) %>% summarize(traffic_km = sum(traffic_km))
+yearinlotsaice <- alldf[which(alldf$icecon > 80 & alldf$traffic_km > 0),] %>% 
+  group_by(year) %>%
+  summarize(traffic_km = sum(traffic_km),
+            totcarg_km = sum(carg_km), 
+            totfish_km = sum(fish_km),
+            tottank_km = sum(tank_km), 
+            totother_km = sum(other_km),
+            ncells=n())
 
-ggplot(yearinlotsaice, aes(x=year, y=traffic_km, fill=as.factor(year))) +
+ggplot(yearinlotsa, aes(x=year, y=distance, fill=type)) +
   geom_bar(stat="identity") +
   scale_fill_manual(labels=2015:2020, values=brewer.pal(7,"YlGnBu")[2:7], name="Year") +
   scale_x_continuous(breaks= 2015:2020) +
   scale_y_continuous(breaks=seq(0,50000, by=10000)) +
   theme_bw(base_size = 20) +
   xlab("") +
-  ylab("Total Vessel Traffic\nin >50% Ice (km)") + 
+  ylab("Total Vessel Traffic\nin Pack Ice (km)") + 
   theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(), 
-        legend.position = "none")
-# ggsave("../Figures/AISIn50Ice_AnnualBar.png", width=9, height=6, units="in")
+        panel.grid.minor = element_blank())
+ggsave("../Figures/AISIn80Ice_AnnualBar.png", width=9, height=6, units="in")
+
+yearinlotsaicelong <- yearinlotsaice %>% 
+  select(year, totcarg_km, tottank_km, totfish_km, totother_km) %>% 
+  gather(-year, key=type, value=distance)
+
+
+ggplot(yearinlotsaicelong, aes(x=year, y=distance, fill=type)) +
+  geom_bar(stat="identity", position="stack") +
+  scale_fill_manual(values=qualitative_hcl(4, palette = "Dynamic"), name="Vessel Type", labels=c("Cargo", "Fishing", "Other", "Tanker")) +
+  scale_x_continuous(breaks= 2015:2020) +
+  scale_y_continuous(breaks=seq(0,50000, by=10000)) +
+  theme_bw(base_size = 20) +
+  xlab("") +
+  ylab("Total Vessel Traffic\nin Pack Ice (km)") + 
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+ggsave("../Figures/AISIn80Ice_Types_AnnualBar.png", width=9, height=6, units="in")
+
+##################################################################################
+# Growth in vessel traffic by ice con 
+##################################################################################
 
 # Change in vessel traffic by ice concentration 
 totaltraff <- alldf %>% group_by(year) %>% summarize(traffic_km = sum(traffic_km))
 pctchangetotal <- round((totaltraff$traffic_km[totaltraff$year == 2020]-totaltraff$traffic_km[totaltraff$year == 2015])/totaltraff$traffic_km[totaltraff$year == 2020]*100,2)
 pctchangeinlotsaice <- round((yearinlotsaice$traffic_km[yearinlotsaice$year == 2020]-yearinlotsaice$traffic_km[yearinlotsaice$year == 2015])/yearinlotsaice$traffic_km[yearinlotsaice$year == 2020]*100,2)
 pctchangeinice <- round((yearinice$traffic_km[yearinice$year == 2020]-yearinice$traffic_km[yearinice$year == 2015])/yearinice$traffic_km[yearinice$year == 2020]*100,2)
+
 
 # Growth in vessel traffic by ice concentration 
 growthbyicecon <- alldf %>% 
@@ -362,28 +421,14 @@ ggplot(growthbyicecon, aes(x=icecon, y=pctchange)) +
 # ggsave("../Figures/AISIbyIceCon_PctChange.png", width=9, height=6, units="in")
 
 ### Total vessel traffic in cells with 100% ice concentration is zero!  
-yearinallice <- alldf[which(alldf$icecon >= 100  & alldf$traffic_km > 0),] %>% group_by(year) %>% summarize(traffic_km = sum(traffic_km)) 
+yearinallice <- alldf[which(alldf$icecon >= 100  & alldf$traffic_km > 0),] %>% 
+  group_by(year) %>% 
+  summarize(traffic_km = sum(traffic_km))
 
+##################################################################################
+# Vessel traffic in occupied cells x ice concentration - BOXPLOT
+##################################################################################
 
-# Line plot: Mean vessel traffic in occupied cells x ice concentration 
-trafficbyiceconsumms <- alldf[which(alldf$icecon > 0  & alldf$traffic_km > 0),] %>% 
-  filter(icecon > 0) %>% 
-  mutate(icecon = round(icecon, 0)) %>% 
-  group_by(icecon) %>% 
-  summarize(traffic_km = median(traffic_km), nShips= median(nShips), ncells=n())
-
-ggplot(trafficbyiceconsumms, aes(x=icecon, y=nShips)) +
-  geom_line() +
-  scale_x_continuous(breaks= seq(0,100,10)) +
-  theme_bw(base_size = 20) +
-  xlab("Sea Ice Concentration (%)") +
-  ylab("Median Vessel Traffic\nin Occupied Cells (km)") + 
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(), 
-        legend.position = "none")
-# ggsave("../Figures/nShipsbyIceCon.png", width=9, height=6, units="in")
-
-# Box plot: vessel traffic in occupied cells x ice concentration 
 trafficbyicecon <- alldf[which(alldf$icecon > 0  & alldf$traffic_km > 0),] %>% 
   filter(icecon > 0) %>% 
   mutate(icecon = round(icecon, -1)) 
@@ -398,7 +443,10 @@ ggplot(trafficbyicecon, aes(x=icecon, y=traffic_km, group=icecon)) +
         legend.position = "none")
 # ggsave("../Figures/VesselTrafficbyIceCon_Boxplot.png", width=9, height=6, units="in")
 
-# Proportion of cells occupied x ice concentration 
+##################################################################################
+# Proportion of cells occupied x ice concentration - LINE PLOT 
+##################################################################################
+
 propocc <- alldf %>%  
   mutate(icecon = round(icecon, 0)) %>% 
   group_by(icecon) %>% 
@@ -425,16 +473,64 @@ ggplot(propocc, aes(x=icecon, y=propocc)) +
         axis.line = element_line())
 # ggsave("../Figures/PropOccbyIceCon_Lineplot.png", width=9, height=6, units="in")
 
-# Total traffic by ice concentration 
-test <- alldf %>% filter(icecon > 0) %>% mutate(icecon = round(icecon, 0)) %>% group_by(icecon) %>% summarize(traffic_km = mean(traffic_km), ncells=n())
+##################################################################################
+# Total traffic by ice concentration - LINE PLOT
+##################################################################################
 
-ggplot(test, aes(x=icecon, y=traffic_km)) +
+# Line plot: Mean vessel traffic in occupied cells x ice concentration 
+trafficbyiceconsumms <- alldf[which(alldf$icecon > 0  & alldf$traffic_km > 0),] %>% 
+  filter(icecon > 0) %>% 
+  mutate(icecon = round(icecon, 0)) %>% 
+  group_by(icecon) %>% 
+  summarize(traffic_km = median(traffic_km), nShips= median(nShips), ncells=n())
+
+ggplot(trafficbyiceconsumms, aes(x=icecon, y=nShips)) +
   geom_line() +
-  scale_x_continuous(breaks= seq(0,100,10), expand = c(0, 0), limits = c(0,NA)) +
-  scale_y_continuous(breaks=seq(0,150, 25), expand = c(0, 0), limits=c(0, NA)) + 
+  scale_x_continuous(breaks= seq(0,100,10)) +
   theme_bw(base_size = 20) +
   xlab("Sea Ice Concentration (%)") +
-  ylab("Mean Vessel Traffic\nin Occupied Cells (km)") + 
+  ylab("Median Vessel Traffic\nin Occupied Cells (km)") + 
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        legend.position = "none")
+# ggsave("../Figures/nShipsbyIceCon.png", width=9, height=6, units="in")
+
+test <- alldf %>% 
+  filter(icecon > 0) %>% 
+  mutate(icecon = round(icecon, -1)) %>% 
+  group_by(icecon) %>% 
+  summarize(traf_km = mean(traffic_km), 
+            tottraff_km = sum(traffic_km),
+            totcarg_km = sum(carg_km), 
+            totfish_km = sum(fish_km),
+            tottank_km = sum(tank_km), 
+            totother_km = sum(other_km),
+            ncells=n())
+
+testlong <- test %>% select(icecon, totcarg_km, tottank_km, totfish_km, totother_km) %>% gather(-icecon, key=type, value=distance)
+testlong %>% group_by(type) %>% summarize(distance=sum(distance))
+
+ggplot(testlong, aes(x=icecon, y=distance, group=type, color=type)) +
+  geom_line( lwd=2) +
+  scale_color_manual(values=qualitative_hcl(4, palette = "Dynamic"), name="Vessel Type", labels=c("Cargo", "Fishing", "Other", "Tanker")) +
+  scale_x_continuous(breaks= seq(0,100,10), expand = c(0, 0), limits = c(0,NA)) +
+  # scale_y_continuous(breaks=seq(0,250000,50000), expand=c(0,0),limits=c(0, 200000)) +
+  theme_bw(base_size = 20) +
+  xlab("Sea Ice Concentration (%)") +
+  ylab("Vessel Traffic\nin Sea Ice (km)") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        axis.line = element_line())
+ggsave("../Figures/VesselTrafficbyIceCon_Types_Lineplot.png", width=9, height=6, units="in")
+
+ggplot(test, aes(x=icecon, y=tottraff_km)) +
+  geom_line() +
+  scale_x_continuous(breaks= seq(0,100,10), expand = c(0, 0), limits = c(0,NA)) +
+  scale_y_continuous(breaks=seq(0,50000,10000), expand = c(0, 0), limits=c(0, NA)) + 
+  theme_bw(base_size = 20) +
+  xlab("Sea Ice Concentration (%)") +
+  ylab("Vessel Traffic\nin Occupied Cells (km)") + 
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
         legend.position = "none", 
@@ -442,51 +538,36 @@ ggplot(test, aes(x=icecon, y=traffic_km)) +
         axis.line = element_line())
 ggsave("../Figures/VesselTrafficbyIceCon_Lineplot.png", width=9, height=6, units="in")
 
-############################
+##################################################################################
+# Total traffic by ice concentration - MAPS 
+##################################################################################
 
-ice15pixels <- inice %>% group_by(id) %>% summarize(traffic_km = sum(traffic_km))
-ice15sf <- allsf %>% filter(id %in% ice15pixels$id) %>% mutate(ice15traff = ice15pixels$traffic_km)
+#### Marginal ice zone 
+iceMIZpixels <- alldf %>% filter(icecon > 15, icecon < 80, traffic_km > 0) %>% 
+  group_by(id) %>% 
+  summarize(traffic_km = sum(traffic_km))
+iceMIZsf <- allsf %>% filter(id %in% iceMIZpixels$id) %>% mutate(iceMIZtraff = iceMIZpixels$traffic_km)
 
-min = min(ice15sf$ice15traff)
-max = max(ice15sf$ice15traff)
+min = min(iceMIZsf$iceMIZtraff)
+max = max(iceMIZsf$iceMIZtraff)
 diff <- max - min
-std = sd(ice15sf$ice15traff)
+std = sd(iceMIZsf$iceMIZtraff)
 
 equal.interval = round(seq(min, max, by = diff/6), 0)
-quantile.interval = round(quantile(ice15sf$ice15traff, probs=seq(0, 1, by = 1/6)), 0)
+quantile.interval = round(quantile(iceMIZsf$iceMIZtraff, probs=seq(0, 1, by = 1/6)), 0)
 std.interval = round(c(seq(min, max, by=std), max), 0)
-natural.interval = round(classInt::classIntervals(ice15sf$ice15traff, n = 6, style = 'jenks')$brks,0)
+natural.interval = round(classInt::classIntervals(iceMIZsf$iceMIZtraff, n = 6, style = 'jenks')$brks,0)
 
-ice15sf$ice15traff.equal = cut(ice15sf$ice15traff, breaks=equal.interval, include.lowest = TRUE)
-ice15sf$ice15traff.quantile = cut(ice15sf$ice15traff, breaks=quantile.interval, include.lowest = TRUE)
-ice15sf$ice15traff.std = cut(ice15sf$ice15traff, breaks=std.interval, include.lowest = TRUE)
-ice15sf$ice15traff.natural = cut(ice15sf$ice15traff, breaks=natural.interval, include.lowest = TRUE)
-
-
-ice80pixels <- inice %>% filter(icecon >= 50) %>% group_by(id) %>% summarize(traffic_km = sum(traffic_km))
-ice80sf <- allsf %>% filter(id %in% ice80pixels$id) %>% mutate(ice80traff = ice80pixels$traffic_km)
-
-min = min(ice80sf$ice80traff)
-max = max(ice80sf$ice80traff)
-diff <- max - min
-std = sd(ice80sf$ice80traff)
-
-equal.interval = round(seq(min, max, by = diff/6), 0)
-quantile.interval = round(quantile(ice80sf$ice80traff, probs=seq(0, 1, by = 1/6)), 0)
-std.interval = round(c(seq(min, max, by=std), max), 0)
-natural.interval = round(classInt::classIntervals(ice80sf$ice80traff, n = 6, style = 'jenks')$brks,0)
-
-ice80sf$ice80traff.equal = cut(ice80sf$ice80traff, breaks=equal.interval, include.lowest = TRUE)
-ice80sf$ice80traff.quantile = cut(ice80sf$ice80traff, breaks=quantile.interval, include.lowest = TRUE)
-ice80sf$ice80traff.std = cut(ice80sf$ice80traff, breaks=std.interval, include.lowest = TRUE)
-ice80sf$ice80traff.natural = cut(ice80sf$ice80traff, breaks=natural.interval, include.lowest = TRUE)
-
+iceMIZsf$iceMIZtraff.equal = cut(iceMIZsf$iceMIZtraff, breaks=equal.interval, include.lowest = TRUE)
+iceMIZsf$iceMIZtraff.quantile = cut(iceMIZsf$iceMIZtraff, breaks=quantile.interval, include.lowest = TRUE)
+iceMIZsf$iceMIZtraff.std = cut(iceMIZsf$iceMIZtraff, breaks=std.interval, include.lowest = TRUE)
+iceMIZsf$iceMIZtraff.natural = cut(iceMIZsf$iceMIZtraff, breaks=natural.interval, include.lowest = TRUE)
 
 ggplot() +
   geom_sf(data=basemap.crop, fill="white", color="black", lwd=0.5, alpha = 0.9) +
-  geom_sf(data=allsf$geometry, fill=NA) +
-  geom_sf(data=ice15sf,aes(fill=ice15traff.quantile)) +
-  scale_fill_manual(values=brewer.pal(7,"YlGnBu"), name="Total Traffic (km)") +
+  geom_sf(data=st_buffer(allsf$geometry, 10000), fill=NA) +
+  geom_sf(data=iceMIZsf,aes(fill=iceMIZtraff.quantile)) +
+  scale_fill_manual(values=brewer.pal(7,"YlOrRd"), name="Total Traffic (km)") +
   # geom_sf(data=ice50sf$geometry[ice50sf$ice50traff > 1000], fill="red") +
   xlab("") +
   ylab("") +
@@ -504,48 +585,58 @@ ggplot() +
         panel.border =  element_rect(colour = "black"),
         panel.grid.major = element_line(colour = "transparent"))
 
-ggsave(filename= "../Figures/InIce15_Quantile.png", 
-       width=8, height=8, units="in", dpi=300)
+ggsave(filename= "../Figures/IniceMIZ_Quantile.png",
+       width=10, height=8, units="in", dpi=300)
 
+## Pack ice 
+ice80pixels <- alldf %>% filter(icecon > 80, traffic_km > 0) %>% group_by(id) %>% summarize(traffic_km = sum(traffic_km))
+ice80sf <- allsf %>% filter(id %in% ice80pixels$id) %>% mutate(ice80traff = ice80pixels$traffic_km)
 
-### OLD HOTSPOT CODE
-# n <- 10
-# 
-# inice$icecon_rescale <- scales::rescale(inice$icecon, to=c(0,100))
-# inice$traffic_rescale <- scales::rescale(inice$traffic_km, to=c(0,100))
-# 
-# inice$hotspots <- inice$icecon_rescale + inice$traffic_rescale
-# 
-# top10pct <- max(inice$hotspots) - 0.1*max(inice$hotspots)
-# 
-# hotspots <- inice[which(inice$hotspots > top10pct),]
-# 
-# ggplot(inice, aes(x=hotspots$hotspots)) +
-#   geom_histogram(bins=50)
-# 
-# 
-# test <- inice[inice$traffic_km > quantile(inice$traffic_km,prob=1-n/100),]
-# 
-# test2 <- inice[inice$icecon > quantile(inice$icecon,prob=1-n/100),]
-# 
-# inice <- inice %>% arrange(desc(icecon)) %>% mutate(icerank = 1:length(icecon))
-# inice <- inice %>% arrange(desc(traffic_km)) %>% mutate(traffrank = 1:length(traffic_km))
-# inice$ranks <- inice$icerank + inice$traffrank
-# 
-# hotspots <- inice[inice$ranks < quantile(inice$ranks,prob=n/100),]
-# 
-# hotspotids <- hotspots %>% group_by(id) %>% summarize(n=n())
-# hotspotsf <- allsf[allsf$id %in% unique(hotspotids$id),] %>% left_join(., hotspotids, by="id") %>% select(id, n)
+min = min(ice80sf$ice80traff)
+max = max(ice80sf$ice80traff)
+diff <- max - min
+std = sd(ice80sf$ice80traff)
 
+equal.interval = round(seq(min, max, by = diff/6), 0)
+quantile.interval = round(quantile(ice80sf$ice80traff, probs=seq(0, 1, by = 1/6)), 0)
+std.interval = round(c(seq(min, max, by=std), max), 0)
+natural.interval = round(classInt::classIntervals(ice80sf$ice80traff, n = 6, style = 'jenks')$brks,0)
 
+ice80sf$ice80traff.equal = cut(ice80sf$ice80traff, breaks=equal.interval, include.lowest = TRUE)
+ice80sf$ice80traff.quantile = cut(ice80sf$ice80traff, breaks=quantile.interval, include.lowest = TRUE)
+ice80sf$ice80traff.std = cut(ice80sf$ice80traff, breaks=std.interval, include.lowest = TRUE)
+ice80sf$ice80traff.natural = cut(ice80sf$ice80traff, breaks=natural.interval, include.lowest = TRUE)
 
+ggplot() +
+  geom_sf(data=basemap.crop, fill="white", color="black", lwd=0.5, alpha = 0.9) +
+  # geom_sf(data=allsf$geometry, fill=NA) +
+  geom_sf(data=ice80sf,aes(fill=ice80traff.quantile)) +
+  scale_fill_manual(values=brewer.pal(7,"YlOrRd"), name="Total Traffic (km)") +
+  # geom_sf(data=ice50sf$geometry[ice50sf$ice50traff > 1000], fill="red") +
+  xlab("") +
+  ylab("") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme_bw() +
+  blank()+
+  theme(legend.title = element_text(size = 20),
+        legend.text = element_text(size = 20),
+        legend.position = "left",
+        legend.background = element_rect(fill = "white", color = "black"),
+        axis.ticks = element_blank(),
+        axis.text=element_blank(),
+        # panel.background = element_rect(fill = "lightblue"),
+        panel.border =  element_rect(colour = "black"),
+        panel.grid.major = element_line(colour = "transparent"))
 
-
-library(fitdistrplus)
+ggsave(filename= "../Figures/Inice80_Quantile.png",
+       width=10, height=8, units="in", dpi=300)
 
 ############################################################################
-# Exploring data distributions
+# Histograms and distribution fitting 
+############################################################################
 
+library(fitdistrplus)
 # Traffic 
 ggplot(inice, aes(x=traffic_km)) +
   geom_histogram(bins=50)
@@ -611,7 +702,6 @@ ggsave(plot=p3, filename= "TestMap.png",
        width=8, height=8, units="in")
 
 ############################################################################
-############################################################################
 # Pixel timeseries 
 ############################################################################
 alldf$date <- as.Date(paste0(alldf$year, "-", alldf$month, "-1"), format="%Y-%m-%d")
@@ -648,6 +738,8 @@ pixeltimeseries(alldf, plotdata = F, savedata=T, saveloc=saveloc,
                 name="nShips", var= "nShips", varlab = "Number of Ships")
 
 
+############################################################################
+# Non-parametric correlations across all data 
 ############################################################################
 
 cor.test(inice$traffic_km, inice$icecon, method="kendall")
