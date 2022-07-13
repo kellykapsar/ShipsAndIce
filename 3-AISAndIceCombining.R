@@ -58,11 +58,11 @@ thickdf <-  icesf %>%
 # Join thickness and concentration data frames 
 allice <- left_join(condf, thickdf, by=c("year", "month", "id"))
 
-# Assume any ice concentration < 10% is no ice 
+# Assume any ice concentration < 15% is no ice 
 allice$icecon <- ifelse(allice$icecon < 15, 0, allice$icecon)
 allice$icethick <- ifelse(allice$icecon < 15, 0, allice$icethick)
 
-# Revise sf object to adhere to 10% threshold
+# Revise sf object to adhere to 15% threshold
 iceconsf <- allice %>% 
   mutate(date=as.Date(paste0(year,"-",month,"-1"), format="%Y-%m-%d")) %>% 
   dplyr::select(id, date, icecon) %>%  
