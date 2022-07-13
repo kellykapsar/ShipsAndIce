@@ -12,6 +12,7 @@ library(ggsn)
 library(colorspace)
 library(RColorBrewer)
 library(scales)
+library(viridis)
 
 
 saveloc <- "../Figures/"
@@ -28,7 +29,7 @@ AA <- "+proj=aea +lat_1=55 +lat_2=65 +lat_0=50 +lon_0=-154 +x_0=0 +y_0=0 +ellps=
 #######################################################################
 # all sf == spatial data frame (each row is a unique cell)
 allsf <- st_read("../Data_Processed/IceTrafficDataFrame.shp")
-# studyoutline <- allsf %>% select(id) %>% st_union() %>% st_write("../Data_Processed/StudyOutline.shp")
+# studyoutline <- allsf %>% select(id) %>% st_union() %>% st_write("../Data_Processed/StudyOutline.shp", overwrite=T)
 
 alldf <- read.csv("../Data_Processed/IceTrafficDataFrame.csv") %>% dplyr::select(-X)
 
@@ -62,11 +63,11 @@ pizzolato <- function(df, traffcol, icecol){
   lotsaicenew <- lotsaice[-keeplotsaice]
   traffnew <- traff[-lotsaicenew,]
   icenew <- ice[-lotsaicenew,]
-  if(length(traff) > 0){
+  if(length(traffnew) > 0){
     cortest <- cor.test(traffnew, icenew, method="kendall")
     return(cortest)
   }
-  if(length(traff) <= 0){
+  if(length(traffnew) <= 0){
     return(NA)
   }
 }
@@ -78,14 +79,28 @@ pizzolato_conkm <- function(df){
   }
   maxice <- max(df$icecon[which(df$traffic_km != 0)])
   lotsaice <- which(df$icecon > maxice & df$traffic_km == 0)
-  keeplotsaice <- which(df$icecon[lotsaice] == min(df$icecon[lotsaice]))
-  lotsaicenew <- lotsaice[-keeplotsaice]
-  dfnew <- df[-lotsaicenew,]
-  if(length(dfnew$traffic_km) > 0){
-    cortest <- cor.test(dfnew$traffic_km, dfnew$icecon, method="kendall")
+  dfnew <- df
+  
+  if(length(lotsaice) > 1){
+    keeplotsaice <- which(df$icecon[lotsaice] == min(df$icecon[lotsaice]))
+    lotsaicenew <- lotsaice[-keeplotsaice]
+    dfnew <- df[-lotsaicenew,]
+  }
+  
+  notrafforice <- dfnew[which(dfnew$traffic_km == 0 & dfnew$icecon == 0),]
+  
+  dfnewest <- dfnew
+  
+  if(length(notrafforice$year) > 0){
+    dfnewest <- dfnew[-which(dfnew$traffic_km == 0 & dfnew$icecon == 0),]
+    dfnewest <- rbind(dfnewest, notrafforice[1,])
+  }
+  
+  if(length(dfnewest$traffic_km) >= 20){
+    cortest <- cor.test(dfnewest$traffic_km, dfnewest$icecon, method="kendall")
     return(cortest)
   }
-  if(length(dfnew$traffic_km) <= 0){
+  if(length(dfnewest$traffic_km) < 20){
     return(NA)
   }
 }
@@ -149,7 +164,7 @@ pizzolato_thicknship <- function(df){
 
 plotKendall <- function(modsf, sigs, savename){
   p3 <- ggplot() +
-    geom_sf(data=basemap.crop, fill="white", color="black", lwd=0.5, alpha = 0.9) +
+    geom_sf(data=basemap.crop, fill="#f0f0f0", lwd=0) +
     # geom_sf(data=aisbounds, fill=NA, color="black", lwd=1)+
     geom_sf(data=modsf, aes(fill=estimate)) +
     colorspace::scale_fill_continuous_divergingx("RdBu", name="", rev=T) +
@@ -160,13 +175,13 @@ plotKendall <- function(modsf, sigs, savename){
     scale_y_continuous(expand = c(0, 0)) +
     theme_bw() +
     blank()+
-    theme(legend.title = element_text(size = 20),
-          legend.text = element_text(size = 20),
+    theme(legend.title = element_text(size = 16),
+          legend.text = element_text(size = 16),
           legend.position = c(0.1,0.2),
           legend.background = element_rect(fill = "white", color = "black"),
           axis.ticks = element_blank(),
           axis.text=element_blank(),
-          # panel.background = element_rect(fill = "lightblue"),
+          panel.background = element_rect(fill = "#cfd3d4"),
           panel.border =  element_rect(colour = "black"),
           panel.grid.major = element_line(colour = "transparent"))
   
@@ -193,7 +208,7 @@ mods <- alldfnest %>%
 
 modelresults <- allsf %>% dplyr::select(id) %>% left_join(., mods[,c("id", "estimate", "statistic", "p.value")])
 sigcells <- st_coordinates(st_centroid(modelresults[which(modelresults$p.value < 0.05),])) %>% as.data.frame()
-# plotKendall(modelresults, sigcells, "KendallCorrelationMap_ConKm")
+plotKendall(modelresults, sigcells, "KendallCorrelationMap_ConKm_NEW20220412")
 
 # Percent of significant pixels with negative correlation coefficients 
 sum(modelresults$estimate[which(modelresults$p.value < 0.05)] <0)/length(modelresults$estimate[which(modelresults$p.value < 0.05)])
@@ -267,7 +282,7 @@ coeff <- 2000 # median(monthstats$iceext/monthstats$traffic_1kkm)
 ggplot() +
   geom_line(data=monthstats, aes(x=timestep, y =iceext, group=year, col=as.factor(year)),lwd=1.5,lty=2) +
   geom_line(data=monthstats, aes(x=timestep, y = traffic_1kkm*coeff, group=year, col=as.factor(year)),lwd=1.5) +
-  scale_color_manual(labels=2015:2020, values=brewer.pal(7,"YlGnBu")[2:7], name="Year") + 
+  scale_color_manual(labels=2015:2020, values=rev(viridis::viridis(6)), name="Year") + 
   xlab("") +
   scale_x_continuous(breaks=1:7, labels = c("Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr") ) +
   scale_y_continuous(name = expression("Sea Ice Extent "~(km^2)),
@@ -277,6 +292,21 @@ ggplot() +
         panel.grid.minor = element_blank())
 
 # ggsave("../Figures/IceAndAIS_MonthlyLines.png", width=9, height=6, units="in")
+
+
+ggplot() +
+  geom_line(data=monthstats, aes(x=timestep, y =iceext, group=year, col=as.factor(year)),lwd=1.5,lty=2) +
+  geom_line(data=monthstats, aes(x=timestep, y = traffic_1kkm*coeff, group=year), alpha=0,lwd=1.5) +
+  scale_color_manual(labels=2015:2020, values=rev(viridis::viridis(6)), name="Year") + 
+  xlab("") +
+  scale_x_continuous(breaks=1:7, labels = c("Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr") ) +
+  scale_y_continuous(name = expression("Sea Ice Extent "~(km^2)),
+                     sec.axis = sec_axis(~./coeff, name = "Total Vessel Traffic (1000s km)")) +
+  theme_bw(base_size = 20) +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+
+ggsave("../Figures/IceAndAIS_MonthlyLines_IceOnly.png", width=9, height=6, units="in")
 
 ############################################################################
 # Traffic in ice by months - LINE CHART 
@@ -323,7 +353,7 @@ yearinMIZ <- alldf %>% filter(icecon > 0, icecon < 80, traffic_km > 0) %>%
 
 ggplot(yearinMIZ, aes(x=year, y=traffic_km, fill=as.factor(year))) +
   geom_bar(stat="identity") +
-  scale_fill_manual(labels=2015:2020, values=brewer.pal(7,"YlGnBu")[2:7], name="Year") +
+  scale_fill_manual(labels=2015:2020, values=rev(viridis::viridis(6)), name="Year") +
   scale_x_continuous(breaks= 2015:2020) +
   scale_y_continuous(breaks=seq(0,300000, by=50000)) +
   theme_bw(base_size = 20) +
@@ -360,16 +390,17 @@ yearinlotsaice <- alldf[which(alldf$icecon > 80 & alldf$traffic_km > 0),] %>%
             totother_km = sum(other_km),
             ncells=n())
 
-ggplot(yearinlotsa, aes(x=year, y=distance, fill=type)) +
+ggplot(yearinlotsaice, aes(x=year, y=traffic_km, fill=as.factor(year))) +
   geom_bar(stat="identity") +
-  scale_fill_manual(labels=2015:2020, values=brewer.pal(7,"YlGnBu")[2:7], name="Year") +
+  scale_fill_manual(values=rev(viridis::viridis(6))) +
   scale_x_continuous(breaks= 2015:2020) +
   scale_y_continuous(breaks=seq(0,50000, by=10000)) +
   theme_bw(base_size = 20) +
   xlab("") +
   ylab("Total Vessel Traffic\nin Pack Ice (km)") + 
   theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank())
+        panel.grid.minor = element_blank(),
+        legend.position = "none")
 ggsave("../Figures/AISIn80Ice_AnnualBar.png", width=9, height=6, units="in")
 
 yearinlotsaicelong <- yearinlotsaice %>% 
@@ -630,6 +661,84 @@ ggplot() +
         panel.grid.major = element_line(colour = "transparent"))
 
 ggsave(filename= "../Figures/Inice80_Quantile.png",
+       width=10, height=8, units="in", dpi=300)
+
+##################################################################################
+# Total traffic in ice - MAPS 
+##################################################################################
+
+#### Marginal ice zone 
+icepixels <- alldf %>% filter(icecon > 15, traffic_km > 0) %>% 
+  group_by(id) %>% 
+  summarize(traffic_km = sum(traffic_km))
+icesf <- allsf %>% filter(id %in% icepixels$id) %>% mutate(icetraff = icepixels$traffic_km)
+
+min = min(icesf$icetraff)
+max = max(icesf$icetraff)
+diff <- max - min
+std = sd(icesf$icetraff)
+
+equal.interval = round(seq(min, max, by = diff/6), 0)
+quantile.interval = round(quantile(icesf$icetraff, probs=seq(0, 1, by = 1/6)), 0)
+std.interval = round(c(seq(min, max, by=std), max), 0)
+natural.interval = round(classInt::classIntervals(icesf$icetraff, n = 6, style = 'jenks')$brks,0)
+
+icesf$icetraff.equal = cut(icesf$icetraff, breaks=equal.interval, include.lowest = TRUE)
+icesf$icetraff.quantile = cut(icesf$icetraff, breaks=quantile.interval, include.lowest = TRUE)
+icesf$icetraff.std = cut(icesf$icetraff, breaks=std.interval, include.lowest = TRUE)
+icesf$icetraff.natural = cut(icesf$icetraff, breaks=natural.interval, include.lowest = TRUE)
+
+ggplot() +
+  geom_sf(data=basemap.crop, fill="white", color="black", lwd=0.5, alpha = 0.9) +
+  geom_sf(data=icesf,aes(fill=icetraff.quantile)) +
+  scale_fill_manual(values=brewer.pal(7,"YlOrRd"), name="Total Traffic (km)") +
+  xlab("") +
+  ylab("") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme_bw() +
+  blank()+
+  theme(legend.title = element_text(size = 20),
+        legend.text = element_text(size = 20),
+        legend.position = "left",
+        legend.background = element_rect(fill = "white", color = "black"),
+        axis.ticks = element_blank(),
+        axis.text=element_blank(),
+        # panel.background = element_rect(fill = "lightblue"),
+        panel.border =  element_rect(colour = "black"),
+        panel.grid.major = element_line(colour = "transparent"))
+
+ggsave(filename= "../Figures/Inice_Quantile.png",
+       width=10, height=8, units="in", dpi=300)
+
+# Read in bowhead concentration areas
+whale<- st_read("../Data_Raw/Bowhead_RelAbund_Winter/Bowhead_RelAbund_Winter.shp")
+hicon <- whale %>% filter(area_desc == "High_Conc - Winter")
+con <- whale %>% filter(area_desc == "Concentration - Winter")
+rang <- whale %>% filter(area_desc == "Range - Winter")
+
+ggplot() +
+  geom_sf(data=basemap.crop, fill="white", color="black", lwd=0.5, alpha = 0.9) +
+  geom_sf(data=hicon, fill="darkblue", alpha = 0.5, lwd=0) +
+  geom_sf(data=con, fill="blue", alpha = 0.5, lwd=0) +
+  geom_sf(data=rang, fill="lightblue", alpha = 0.5, lwd=0) +
+  xlab("") +
+  ylab("") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme_bw() +
+  blank()+
+  theme(legend.title = element_text(size = 20),
+        legend.text = element_text(size = 20),
+        legend.position = "left",
+        legend.background = element_rect(fill = "white", color = "black"),
+        axis.ticks = element_blank(),
+        axis.text=element_blank(),
+        # panel.background = element_rect(fill = "lightblue"),
+        panel.border =  element_rect(colour = "black"),
+        panel.grid.major = element_line(colour = "transparent"))
+
+ggsave(filename= "../Figures/Bowhead_Winter.png",
        width=10, height=8, units="in", dpi=300)
 
 ############################################################################
