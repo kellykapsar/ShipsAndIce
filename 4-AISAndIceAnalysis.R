@@ -667,7 +667,7 @@ ggsave(filename= "../Figures/Inice80_Quantile.png",
 # Total traffic in ice - MAPS 
 ##################################################################################
 
-#### Marginal ice zone 
+#### All ice
 icepixels <- alldf %>% filter(icecon > 15, traffic_km > 0) %>% 
   group_by(id) %>% 
   summarize(traffic_km = sum(traffic_km))
@@ -709,36 +709,6 @@ ggplot() +
         panel.grid.major = element_line(colour = "transparent"))
 
 ggsave(filename= "../Figures/Inice_Quantile.png",
-       width=10, height=8, units="in", dpi=300)
-
-# Read in bowhead concentration areas
-whale<- st_read("../Data_Raw/Bowhead_RelAbund_Winter/Bowhead_RelAbund_Winter.shp")
-hicon <- whale %>% filter(area_desc == "High_Conc - Winter")
-con <- whale %>% filter(area_desc == "Concentration - Winter")
-rang <- whale %>% filter(area_desc == "Range - Winter")
-
-ggplot() +
-  geom_sf(data=basemap.crop, fill="white", color="black", lwd=0.5, alpha = 0.9) +
-  geom_sf(data=hicon, fill="darkblue", alpha = 0.5, lwd=0) +
-  geom_sf(data=con, fill="blue", alpha = 0.5, lwd=0) +
-  geom_sf(data=rang, fill="lightblue", alpha = 0.5, lwd=0) +
-  xlab("") +
-  ylab("") +
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_continuous(expand = c(0, 0)) +
-  theme_bw() +
-  blank()+
-  theme(legend.title = element_text(size = 20),
-        legend.text = element_text(size = 20),
-        legend.position = "left",
-        legend.background = element_rect(fill = "white", color = "black"),
-        axis.ticks = element_blank(),
-        axis.text=element_blank(),
-        # panel.background = element_rect(fill = "lightblue"),
-        panel.border =  element_rect(colour = "black"),
-        panel.grid.major = element_line(colour = "transparent"))
-
-ggsave(filename= "../Figures/Bowhead_Winter.png",
        width=10, height=8, units="in", dpi=300)
 
 ############################################################################
