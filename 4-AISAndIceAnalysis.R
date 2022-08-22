@@ -351,9 +351,8 @@ yearinMIZ <- alldf %>% filter(icecon > 0, icecon < 80, traffic_km > 0) %>%
             totother_km = sum(other_km),
             ncells=n())
 
-ggplot(yearinMIZ, aes(x=year, y=traffic_km, fill=as.factor(year))) +
+ggplot(yearinMIZ, aes(x=year, y=traffic_km)) +
   geom_bar(stat="identity") +
-  scale_fill_manual(labels=2015:2020, values=rev(viridis::viridis(6)), name="Year") +
   scale_x_continuous(breaks= 2015:2020) +
   scale_y_continuous(breaks=seq(0,300000, by=50000)) +
   theme_bw(base_size = 20) +
@@ -390,9 +389,8 @@ yearinlotsaice <- alldf[which(alldf$icecon > 80 & alldf$traffic_km > 0),] %>%
             totother_km = sum(other_km),
             ncells=n())
 
-ggplot(yearinlotsaice, aes(x=year, y=traffic_km, fill=as.factor(year))) +
+ggplot(yearinlotsaice, aes(x=year, y=traffic_km)) +
   geom_bar(stat="identity") +
-  scale_fill_manual(values=rev(viridis::viridis(6))) +
   scale_x_continuous(breaks= 2015:2020) +
   scale_y_continuous(breaks=seq(0,50000, by=10000)) +
   theme_bw(base_size = 20) +
