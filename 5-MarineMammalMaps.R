@@ -105,14 +105,14 @@ hicontraff <- alldf[alldf$id %in% hiconcells,]
 hicontotals <- hicontraff %>%  filter(month %in% c(11, 12, 1, 2, 3)) %>% group_by(year) %>% summarize(traff=sum(traffic_km))
 
 
-ggplot(hicontotals, aes(x=year, y=traff, fill=as.factor(year))) +
+ggplot(hicontotals, aes(x=year, y=traff)) +
   geom_bar(stat="identity") +
-  scale_fill_manual(labels=2015:2020, values=rev(viridis::viridis(6)), name="Year") +
+  # scale_fill_manual(labels=2015:2020, values=rev(viridis::viridis(6)), name="Year") +
   scale_x_continuous(breaks= 2015:2020) +
   # scale_y_continuous(breaks=seq(0,300000, by=50000)) +
   theme_bw(base_size = 20) +
   xlab("") +
-  ylab("Total Vessel Traffi in Bowhead \nWinter High Concentration Areas") + 
+  ylab("Total Vessel Traffic in Bowhead \nWinter High Concentration Areas") + 
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
         legend.position = "none")
