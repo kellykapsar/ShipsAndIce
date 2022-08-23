@@ -1,4 +1,18 @@
+########################################################################
+# TITLE: AIS and Ice Analysis Script
+#
+# DESCRIPTION: This script takes the combined AIS and ice products created
+# in script 3 and conducts non-parametric correlation analyses (following 
+# the methods in Pizzolato et al. 2016). The script also contains code to produce
+# various plots of vessel traffic patterns in the marginal ice zone (15-80% 
+# concentration) and in pack ice (>80% concentration). 
+#
+# CREATED BY: Kelly Kapsar (kelly.kapsar@gmail.com)
+# DATE CREATED: 2022-02
+# DATE LAST MODIFIED: 2022-08-23
+########################################################################
 
+# Load libraries 
 library(raster)
 library(stars)
 library(sf)
@@ -14,7 +28,7 @@ library(RColorBrewer)
 library(scales)
 library(viridis)
 
-
+# Set save location for figures 
 saveloc <- "../Figures/"
 
 # Projection (Alaska Albers)
@@ -27,12 +41,15 @@ AA <- "+proj=aea +lat_1=55 +lat_2=65 +lat_0=50 +lon_0=-154 +x_0=0 +y_0=0 +ellps=
 #   st_write("../Data_Processed/MedianMarchIceExtent1981-2010.shp")
 
 #######################################################################
+# Load data 
+
 # all sf == spatial data frame (each row is a unique cell)
 allsf <- st_read("../Data_Processed/IceTrafficDataFrame.shp")
 # studyoutline <- allsf %>% select(id) %>% st_union() %>% st_write("../Data_Processed/StudyOutline.shp", overwrite=T)
 
 alldf <- read.csv("../Data_Processed/IceTrafficDataFrame.csv") %>% dplyr::select(-X)
 
+# Remove cells near ports (total distance is artificially inflated)
 portcells <- c(1983, 4214, 4168, 2202, 2053, 2054, 2442, 2443, 2516, 2517)
 
 alldf <- alldf[-which(alldf$id %in% portcells),]
@@ -48,6 +65,7 @@ basemap.crop <- st_crop(basemap, st_buffer(allsf, 10000)) %>%
 #######################################################################
 # Call in functions 
 
+# Pizzolato version of the non-parameteric correlation analysis 
 # DOESN'T WORK WITH MAP FUNCTION FOR SOME REASON.... 
 # Couldn't figure out how to make map function work with calling column names, 
 # so just made new functions for each column combo
@@ -162,6 +180,7 @@ pizzolato_thicknship <- function(df){
   }
 }
 
+# Map the results of the kendall correlation 
 plotKendall <- function(modsf, sigs, savename){
   p3 <- ggplot() +
     geom_sf(data=basemap.crop, fill="#f0f0f0", lwd=0) +
@@ -223,8 +242,8 @@ sum(modelresults$estimate[which(modelresults$p.value < 0.05)] <0)/length(modelre
 # modelresults <- allsf %>% dplyr::select(id) %>% left_join(., mods[,c("id", "estimate", "statistic", "p.value")])
 # sigcells <- st_coordinates(st_centroid(modelresults[which(modelresults$p.value < 0.05),])) %>% as.data.frame()
 # plotKendall(modelresults, sigcells, "KendallCorrelationMap_ConnShips")
-
-
+# 
+# 
 # ### Ice thickness and number of ships
 # mods <- alldfnest %>%
 #   mutate(cortest = map(data, function(df){pizzolato_thicknship(df)}),
@@ -306,7 +325,7 @@ ggplot() +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank())
 
-ggsave("../Figures/IceAndAIS_MonthlyLines_IceOnly.png", width=9, height=6, units="in")
+# ggsave("../Figures/IceAndAIS_MonthlyLines_IceOnly.png", width=9, height=6, units="in")
 
 ############################################################################
 # Traffic in ice by months - LINE CHART 
@@ -341,7 +360,7 @@ ggplot() +
 # Annual traffic totals - BAR CHARTS 
 ##################################################################################
 
-# Annual traffic totals in ice 
+# Annual traffic totals in marginal ice zone  
 yearinMIZ <- alldf %>% filter(icecon > 0, icecon < 80, traffic_km > 0) %>% 
   group_by(year) %>% 
   summarize(traffic_km = sum(traffic_km),
@@ -361,7 +380,7 @@ ggplot(yearinMIZ, aes(x=year, y=traffic_km)) +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
         legend.position = "none")
-ggsave("../Figures/AISInMIZ_AnnualBar.png", width=9, height=6, units="in")
+# ggsave("../Figures/AISInMIZ_AnnualBar.png", width=9, height=6, units="in")
 
 yearinMIZlong <- yearinMIZlong %>% 
   select(year, totcarg_km, tottank_km, totfish_km, totother_km) %>% 
@@ -377,9 +396,9 @@ ggplot(yearinMIZlong, aes(x=year, y=distance, fill=type)) +
   ylab("Total Vessel Traffic\nin Marginal Ice Zone (km)") + 
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank())
-ggsave("../Figures/AISInMIZIce_Types_AnnualBar.png", width=9, height=6, units="in")
+# ggsave("../Figures/AISInMIZIce_Types_AnnualBar.png", width=9, height=6, units="in")
 
-### Total vessel traffic in cells with >50% ice concentration 
+### Total vessel traffic in cells with >80% ice concentration 
 yearinlotsaice <- alldf[which(alldf$icecon > 80 & alldf$traffic_km > 0),] %>% 
   group_by(year) %>%
   summarize(traffic_km = sum(traffic_km),
@@ -399,12 +418,11 @@ ggplot(yearinlotsaice, aes(x=year, y=traffic_km)) +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         legend.position = "none")
-ggsave("../Figures/AISIn80Ice_AnnualBar.png", width=9, height=6, units="in")
+# ggsave("../Figures/AISIn80Ice_AnnualBar.png", width=9, height=6, units="in")
 
 yearinlotsaicelong <- yearinlotsaice %>% 
   select(year, totcarg_km, tottank_km, totfish_km, totother_km) %>% 
   gather(-year, key=type, value=distance)
-
 
 ggplot(yearinlotsaicelong, aes(x=year, y=distance, fill=type)) +
   geom_bar(stat="identity", position="stack") +
@@ -416,7 +434,7 @@ ggplot(yearinlotsaicelong, aes(x=year, y=distance, fill=type)) +
   ylab("Total Vessel Traffic\nin Pack Ice (km)") + 
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank())
-ggsave("../Figures/AISIn80Ice_Types_AnnualBar.png", width=9, height=6, units="in")
+# ggsave("../Figures/AISIn80Ice_Types_AnnualBar.png", width=9, height=6, units="in")
 
 ##################################################################################
 # Growth in vessel traffic by ice con 
@@ -551,7 +569,7 @@ ggplot(testlong, aes(x=icecon, y=distance, group=type, color=type)) +
         panel.grid.minor = element_blank(),
         panel.border = element_blank(),
         axis.line = element_line())
-ggsave("../Figures/VesselTrafficbyIceCon_Types_Lineplot.png", width=9, height=6, units="in")
+# ggsave("../Figures/VesselTrafficbyIceCon_Types_Lineplot.png", width=9, height=6, units="in")
 
 ggplot(test, aes(x=icecon, y=tottraff_km)) +
   geom_line() +
@@ -565,7 +583,7 @@ ggplot(test, aes(x=icecon, y=tottraff_km)) +
         legend.position = "none", 
         panel.border = element_blank(), 
         axis.line = element_line())
-ggsave("../Figures/VesselTrafficbyIceCon_Lineplot.png", width=9, height=6, units="in")
+# ggsave("../Figures/VesselTrafficbyIceCon_Lineplot.png", width=9, height=6, units="in")
 
 ##################################################################################
 # Total traffic by ice concentration - MAPS 
@@ -614,8 +632,8 @@ ggplot() +
         panel.border =  element_rect(colour = "black"),
         panel.grid.major = element_line(colour = "transparent"))
 
-ggsave(filename= "../Figures/IniceMIZ_Quantile.png",
-       width=10, height=8, units="in", dpi=300)
+# ggsave(filename= "../Figures/IniceMIZ_Quantile.png",
+#        width=10, height=8, units="in", dpi=300)
 
 ## Pack ice 
 ice80pixels <- alldf %>% filter(icecon > 80, traffic_km > 0) %>% group_by(id) %>% summarize(traffic_km = sum(traffic_km))
@@ -658,8 +676,8 @@ ggplot() +
         panel.border =  element_rect(colour = "black"),
         panel.grid.major = element_line(colour = "transparent"))
 
-ggsave(filename= "../Figures/Inice80_Quantile.png",
-       width=10, height=8, units="in", dpi=300)
+# ggsave(filename= "../Figures/Inice80_Quantile.png",
+#        width=10, height=8, units="in", dpi=300)
 
 ##################################################################################
 # Total traffic in ice - MAPS 
@@ -706,8 +724,8 @@ ggplot() +
         panel.border =  element_rect(colour = "black"),
         panel.grid.major = element_line(colour = "transparent"))
 
-ggsave(filename= "../Figures/Inice_Quantile.png",
-       width=10, height=8, units="in", dpi=300)
+# ggsave(filename= "../Figures/Inice_Quantile.png",
+#        width=10, height=8, units="in", dpi=300)
 
 ############################################################################
 # Histograms and distribution fitting 
@@ -813,107 +831,3 @@ pixeltimeseries(alldf, plotdata = F, savedata=T, saveloc=saveloc,
 
 pixeltimeseries(alldf, plotdata = F, savedata=T, saveloc=saveloc, 
                 name="nShips", var= "nShips", varlab = "Number of Ships")
-
-
-############################################################################
-# Non-parametric correlations across all data 
-############################################################################
-
-cor.test(inice$traffic_km, inice$icecon, method="kendall")
-cor.test(inice$traffic_km, inice$icethick, method="kendall")
-cor.test(inice$nShips, inice$icecon, method="kendall")
-cor.test(inice$nShips, inice$icethick, method="kendall")
-
-hist(log(inice$traffic_km))
-inice$log_traffic_km <- log(inice$traffic_km)
-inice$sqrt_icecon <- sqrt(inice$icecon)
-
-fit1 <- lm(log_traffic_km ~ sqrt_icecon, data = inice)
-
-assumps <- augment(fit1)
-
-qqnorm(assumps$.std.resid)
-qqline(assumps$.std.resid)
-
-
-library(nortest)
-ad.test(assumps$.std.resid)
-ggplot(data = assumps, aes(y = .std.resid, x = .fitted)) +
-  geom_point() +
-  geom_hline(yintercept = 0) +
-  geom_hline(yintercept = -2) +
-  geom_hline(yintercept = 2) +
-  ggtitle("Standardized Residuals vs Fits")
-
-
-
-test <- glm(traffic_km ~ icecon, data=inice, family=Gamma)
-t <- augment(test)
-summary(test)
-
-library(segmented)
-test <- segmented(fit1, npsi=1)
-
-# breakpoint
-test$psi
-
-# Slope
-slope(test)
-
-fitteddata <- fitted(test)
-my.model <- data.frame(sqrticecon = inice$sqrt_icecon, logtraff=fitteddata)
-
-
-
-
-
-ggplot() + 
-  geom_point(data=inice, aes(x=sqrt_icecon, y=log_traffic_km)) +
-  geom_line(data=my.model, aes(x= sqrticecon, y=logtraff), colour="red", lwd=2)
-
-
-
-
-# https://rpubs.com/mpfoley73/495822#:~:text=In%20general%2C%20transforming%20the%20response,predictor%20variables%20corrects%20non%2Dlinearity.
-fit2 <- glm(log_traffic_km ~ icethick, data = inice)
-fit3 <- lm(log_traffic_km ~ icecon + icethick, data = inice)
-
-
-
-ggplotRegression <- function (fit) {
-  
-  require(ggplot2)
-  
-  ggplot(fit$model, aes_string(x = names(fit$model)[2], y = names(fit$model)[1])) + 
-    geom_point() +
-    stat_smooth(method = "lm", col = "red") +
-    labs(title = paste("Adj R2 = ",signif(summary(fit)$adj.r.squared, 5),
-                       "Intercept =",signif(fit$coef[[1]],5 ),
-                       " Slope =",signif(fit$coef[[2]], 5),
-                       " P =",signif(summary(fit)$coef[2,4], 5)))
-}
-
-ggplotRegression(fit1)
-ggplotRegression(fit2)
-
-
-ggplot(data=inice, aes(x=icecon, y=log(traffic_km))) +
-  geom_point() +
-  geom_smooth()
-
-ggplot(data=inice, aes(x=icecon, y=traffic_km)) +
-  geom_point() +
-  geom_smooth()
-
-ggplot(data=inice, aes(x=icethick, y=log(traffic_km))) +
-  geom_point() +
-  geom_smooth()
-
-ggplot(data=inice, aes(x=icethick, y=nShips)) +
-  geom_point() +
-  geom_smooth()
-
-ggplot(data=inice, aes(x=icecon, y=nShips)) +
-  geom_point() +
-  geom_smooth()
-

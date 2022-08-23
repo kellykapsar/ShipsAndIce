@@ -1,10 +1,12 @@
 ########################################################################
 # TITLE: Ice Processing 
+#
 # DESCRIPTION: This script takes netcdf files from the CryoSat2-SMOS merged
 # product and extracts sea ice thickness and concentration values for the 
 # North Pacific study area for which we have AIS data, from 2015-2020. 
 # The script then projects the data into Alaska Albers, and converts the 
 # files into raster stacks. 
+#
 # CREATED BY: Kelly Kapsar (kelly.kapsar@gmail.com)
 # DATE CREATED: 2022-02
 # DATE LAST MODIFIED: 2022-08-23

@@ -1,4 +1,19 @@
+########################################################################
+# TITLE: Merged AIS and Ice Product
+#
+# DESCRIPTION: This script takes the sea ice and vessel traffic data sets
+# made in scripts 1 & 2 and combines them into a merged product containing
+# sea ice concentration, sea ice thickness, vessel traffic (km), and number
+# of unique ships for the months of October through April of 2015-2020. Data
+# is stored by individual pixel for each pixel of the study area that has a sea 
+# ice concentration value of >15% for at least one month during the study period. 
+#
+# CREATED BY: Kelly Kapsar (kelly.kapsar@gmail.com)
+# DATE CREATED: 2022-02
+# DATE LAST MODIFIED: 2022-08-23
+########################################################################
 
+# Load libraries 
 library(raster)
 library(stars)
 library(sf)
@@ -6,9 +21,12 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 
+# Load AIS data 
 origmethod <- list.files("../Data_Processed/", pattern="LenAndNShips")
 origmethod <- lapply(origmethod, function(x){read.csv(paste0("../Data_Processed/",x))})
 origmethod <- do.call(rbind, origmethod)
+
+# Convert distance to km and remove old distance calculation in m
 origmethod$traffic_km <- origmethod$length/1000
 origmethod$carg_km <- origmethod$CargoDist/1000
 origmethod$tank_km <- origmethod$TankDist/1000
@@ -94,7 +112,7 @@ allpixels <- allpixels[which(!(allpixels$id %in% noice$id)),]
 
 # cor.test(allice$icethick, allice$icecon)
 
-# Joine ice data with vessel traffic data 
+# Join ice data with vessel traffic data 
 alldf <-left_join(allice, allpixels, by=c("year", "month", "id"))
 alldf <- alldf[,c("year", "month", "id", "icecon", "icethick",
                   "traffic_km", "carg_km", "fish_km", "tank_km", "other_km",

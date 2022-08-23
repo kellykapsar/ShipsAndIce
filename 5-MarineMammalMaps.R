@@ -1,4 +1,17 @@
+########################################################################
+# TITLE: Vessel Traffic in Marine Mammal Concentration Areas
+#
+# DESCRIPTION: This script takes the combined AIS and ice products created
+# in script 3 and spatially intersects it with areas of bowhead whale winter
+# concentration from the Ecological Atlas of the Bering, Chukchi, and Beaufort 
+# Seas produced by Auduobon in 2016. 
+#
+# CREATED BY: Kelly Kapsar (kelly.kapsar@gmail.com)
+# DATE CREATED: 2022-07
+# DATE LAST MODIFIED: 2022-08-23
+########################################################################
 
+# Load libraries 
 library(sf)
 library(dplyr)
 library(tidyr)
@@ -12,11 +25,11 @@ library(RColorBrewer)
 library(scales)
 library(viridis)
 
-
-saveloc <- "../Figures/"
-
-# Projection (Alaska Albers)
+# Specify projection (Alaska Albers)
 AA <- "+proj=aea +lat_1=55 +lat_2=65 +lat_0=50 +lon_0=-154 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
+
+###############################################################
+# Load data 
 
 # all sf == spatial data frame (each row is a unique cell)
 allsf <- st_read("../Data_Processed/IceTrafficDataFrame.shp")
@@ -56,39 +69,8 @@ ggplot() +
         panel.border =  element_rect(colour = "black"),
         panel.grid.major = element_line(colour = "transparent"))
 
-ggsave(filename= "../Figures/Bowhead_Winter.png",
-       width=10, height=8, units="in", dpi=300)
-
-########################### WALRUS ########################### 
-# Read in walrus concentration areas
-walrus<- st_read("../Data_Raw/Walrus_WinterSpringRelAbund/OdobenusRosmarus_WinterSpringRelAbund.shp") %>% st_transform(AA)
-walcon <- walrus %>% filter(area_desc == "Concentration - Winter & Spring")
-walreg <- walrus %>% filter(area_desc == "Regular Use - Winter & Spring")
-walrang <- walrus %>% filter(area_desc == "Winter and Spring Range")
-
-ggplot() +
-  geom_sf(data=basemap.crop, fill="white", color="black", lwd=0.5, alpha = 0.9) +
-  geom_sf(data=walrang, fill="#d5ebf1", lwd=0) +
-  geom_sf(data=walreg, fill="#a6cee3", lwd=0) +
-  geom_sf(data=walcon, fill="#96acf2", lwd=0) +
-  xlab("") +
-  ylab("") +
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_continuous(expand = c(0, 0)) +
-  theme_bw() +
-  blank()+
-  theme(legend.title = element_text(size = 20),
-        legend.text = element_text(size = 20),
-        legend.position = "left",
-        legend.background = element_rect(fill = "white", color = "black"),
-        axis.ticks = element_blank(),
-        axis.text=element_blank(),
-        # panel.background = element_rect(fill = "lightblue"),
-        panel.border =  element_rect(colour = "black"),
-        panel.grid.major = element_line(colour = "transparent"))
-
-ggsave(filename= "../Figures/Walrus_Winter.png",
-       width=10, height=8, units="in", dpi=300)
+# ggsave(filename= "../Figures/Bowhead_Winter.png",
+#        width=10, height=8, units="in", dpi=300)
 
 ########################### VESSEL TRAFFIC IN BOWHEAD CONCENTRATION AREAS ########################### 
 
@@ -116,5 +98,5 @@ ggplot(hicontotals, aes(x=year, y=traff)) +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
         legend.position = "none")
-ggsave("../Figures/AISInBowheadHiCon_AnnualBar.png", width=9, height=6, units="in")
+# ggsave("../Figures/AISInBowheadHiCon_AnnualBar.png", width=9, height=6, units="in")
 

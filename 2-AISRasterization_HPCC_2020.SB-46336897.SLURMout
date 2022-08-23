@@ -1,0 +1,437 @@
+Loading required package: sp
+Linking to GEOS 3.8.0, GDAL 3.0.2, PROJ 6.2.1
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:raster’:
+
+    intersect, select, union
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+
+Attaching package: ‘tidyr’
+
+The following object is masked from ‘package:raster’:
+
+    extract
+
+Loading required package: abind
+Loading required package: iterators
+Loading required package: parallel
+Reading layer `Tracks_2020-01-Cargo' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-01-Cargo.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 2757 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2541813 ymin: 234597.8 xmax: 475287.1 ymax: 1799119
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-01-Fishing' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-01-Fishing.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 6381 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2546427 ymin: 376483.5 xmax: 533683.1 ymax: 1796025
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-01-Other' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-01-Other.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 4177 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2546141 ymin: 234674.5 xmax: 533876.4 ymax: 2561155
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-01-Tanker' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-01-Tanker.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 216 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2545618 ymin: 344922 xmax: 533149.2 ymax: 1795851
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-02-Cargo' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-02-Cargo.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 2887 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2544041 ymin: 234616.7 xmax: 454979.7 ymax: 1799173
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-02-Fishing' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-02-Fishing.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 7512 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2545865 ymin: 369919.3 xmax: 532420.9 ymax: 1795072
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-02-Other' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-02-Other.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 4337 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2542567 ymin: 234890.2 xmax: 533825.1 ymax: 2561155
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-02-Tanker' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-02-Tanker.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 264 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2542453 ymin: 339053.2 xmax: 533195.2 ymax: 1794522
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-03-Cargo' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-03-Cargo.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 2581 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2542662 ymin: 234599.7 xmax: 466292.3 ymax: 1799173
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-03-Fishing' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-03-Fishing.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 7598 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2545073 ymin: 376228.6 xmax: 533966.7 ymax: 1794972
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-03-Other' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-03-Other.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 4955 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2544754 ymin: 234738.2 xmax: 534129 ymax: 2561155
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-03-Tanker' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-03-Tanker.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 196 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2537319 ymin: 234601.4 xmax: 533184.1 ymax: 1796538
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-04-Cargo' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-04-Cargo.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 2971 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2542893 ymin: 234584.9 xmax: 457454.8 ymax: 1799278
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-04-Fishing' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-04-Fishing.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 5865 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2545664 ymin: 322257.6 xmax: 533926.2 ymax: 1794224
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-04-Other' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-04-Other.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 5212 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2544294 ymin: 234784 xmax: 533911.5 ymax: 2561155
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-04-Tanker' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-04-Tanker.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 208 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2542724 ymin: 247952.2 xmax: 533187.9 ymax: 1796420
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-05-Cargo' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-05-Cargo.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 3411 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2542833 ymin: 234572.1 xmax: 449394.6 ymax: 1829054
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-05-Fishing' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-05-Fishing.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 6696 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2546239 ymin: 374791.5 xmax: 534314.1 ymax: 1827780
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-05-Other' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-05-Other.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 7303 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2543842 ymin: 234695 xmax: 533895.1 ymax: 2602365
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-05-Tanker' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-05-Tanker.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 329 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2542032 ymin: 234636.7 xmax: 533169.4 ymax: 2591094
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-06-Cargo' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-06-Cargo.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 3399 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2542632 ymin: 234590.5 xmax: 532924.4 ymax: 2031763
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-06-Fishing' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-06-Fishing.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 11058 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2545864 ymin: 380994.6 xmax: 534457.4 ymax: 1904990
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-06-Other' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-06-Other.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 9390 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2541829 ymin: 234631.6 xmax: 534000.1 ymax: 2664882
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-06-Tanker' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-06-Tanker.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 503 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2537290 ymin: 234725 xmax: 533187.7 ymax: 2664890
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-07-Cargo' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-07-Cargo.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 4165 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2543572 ymin: 234592 xmax: 452372.7 ymax: 2666601
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-07-Fishing' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-07-Fishing.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 13733 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2546378 ymin: 382895.3 xmax: 534019 ymax: 1936016
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-07-Other' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-07-Other.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 11411 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2543902 ymin: 234669.6 xmax: 534590.5 ymax: 2664768
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-07-Tanker' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-07-Tanker.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 585 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2542946 ymin: 234590.1 xmax: 533073.6 ymax: 2665962
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-08-Cargo' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-08-Cargo.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 3939 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2542696 ymin: 234579.9 xmax: 533581.1 ymax: 2715396
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-08-Fishing' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-08-Fishing.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 11398 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2546949 ymin: 340576.3 xmax: 534857.7 ymax: 2669119
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-08-Other' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-08-Other.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 10589 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2545143 ymin: 234745.3 xmax: 535149.9 ymax: 2704551
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-08-Tanker' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-08-Tanker.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 612 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2537713 ymin: 235982.5 xmax: 533180 ymax: 2708887
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-09-Cargo' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-09-Cargo.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 3711 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2543260 ymin: 234629.9 xmax: 532982.9 ymax: 2710929
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-09-Fishing' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-09-Fishing.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 9188 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2546137 ymin: 305863.6 xmax: 534843.6 ymax: 2631180
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-09-Other' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-09-Other.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 8783 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2541553 ymin: 234595.7 xmax: 534873.9 ymax: 2704707
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-09-Tanker' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-09-Tanker.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 659 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2542842 ymin: 234636.7 xmax: 533154.9 ymax: 2702704
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-10-Cargo' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-10-Cargo.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 3712 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2545434 ymin: 234598.5 xmax: 509174.4 ymax: 2709264
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-10-Fishing' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-10-Fishing.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 7443 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2543214 ymin: 289347.3 xmax: 533690.9 ymax: 2649792
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-10-Other' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-10-Other.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 8154 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2544670 ymin: 235748 xmax: 534153.1 ymax: 2707398
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-10-Tanker' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-10-Tanker.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 586 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2541964 ymin: 234605.6 xmax: 533191.1 ymax: 2665372
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-11-Cargo' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-11-Cargo.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 2932 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2542697 ymin: 234587.4 xmax: 532784.7 ymax: 2661574
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-11-Fishing' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-11-Fishing.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 5154 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2546194 ymin: 377869 xmax: 533259.6 ymax: 2022893
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-11-Other' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-11-Other.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 5166 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2545955 ymin: 235032.9 xmax: 534179.6 ymax: 2654031
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-11-Tanker' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-11-Tanker.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 310 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2538733 ymin: 272350.4 xmax: 533194.4 ymax: 2641306
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-12-Cargo' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-12-Cargo.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 2980 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2542405 ymin: 234593.3 xmax: 533008 ymax: 2651660
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-12-Fishing' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-12-Fishing.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 4256 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2546252 ymin: 365780.5 xmax: 533501.4 ymax: 1886045
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-12-Other' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-12-Other.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 3972 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2546312 ymin: 236076.5 xmax: 533769.1 ymax: 2652952
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Tracks_2020-12-Tanker' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/Data_Processed/Vector/Tracks_2020-12-Tanker.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 285 features and 15 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: -2542703 ymin: 347183.3 xmax: 533167.1 ymax: 2639645
+Projected CRS: NAD83 / Alaska Albers
+Reading layer `Ice_SMOS' from data source 
+  `/mnt/ufs18/home-109/kapsarke/Documents/AISAndIce/Data_Raw/Ice_SMOS.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 4744 features and 85 fields
+Geometry type: POLYGON
+Dimension:     XY
+Bounding box:  xmin: -2674112 ymin: 451282.7 xmax: 718017.6 ymax: 3294686
+CRS:           unknown
+[1] "Traffic list length: 12"
+`summarise()` has grouped output by 'id', 'year'. You can override using the `.groups` argument.
+`summarise()` has grouped output by 'id', 'year'. You can override using the `.groups` argument.
+`summarise()` has grouped output by 'id', 'year'. You can override using the `.groups` argument.
+`summarise()` has grouped output by 'id', 'year'. You can override using the `.groups` argument.
+`summarise()` has grouped output by 'id', 'year'. You can override using the `.groups` argument.
+`summarise()` has grouped output by 'id', 'year'. You can override using the `.groups` argument.
+`summarise()` has grouped output by 'id', 'year'. You can override using the `.groups` argument.
+`summarise()` has grouped output by 'id', 'year'. You can override using the `.groups` argument.
+`summarise()` has grouped output by 'id', 'year'. You can override using the `.groups` argument.
+`summarise()` has grouped output by 'id', 'year'. You can override using the `.groups` argument.
+`summarise()` has grouped output by 'id', 'year'. You can override using the `.groups` argument.
+`summarise()` has grouped output by 'id', 'year'. You can override using the `.groups` argument.
+      user     system    elapsed 
+89.8582167  0.9439833 12.6584000 
+Job id              Name             Username        Time Use S Queue          
+------------------- ---------------- --------------- -------- - ---------------
+46336897            2-AISRasterizati kapsarke        00:00:12 R general-short  

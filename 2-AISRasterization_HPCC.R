@@ -1,4 +1,21 @@
+########################################################################
+# TITLE: AIS Rasterization Script 
+#
+# DESCRIPTION: This script takes vector data processed as part of the 
+# North Pacific and Arctic Vessel Traffic Data Set (2015-2020) and 
+# rasterizes it based on the boundaries of the sea ice pixels from the 
+# CryoSat2-SMOS merged product from the script "1-IceProcessing.R". 
+#
+# CREATED BY: Kelly Kapsar (kelly.kapsar@gmail.com)
+# DATE CREATED: 2022-02
+# DATE LAST MODIFIED: 2022-08-23
+#
+# NOTE: This script was designed to be run on one year of data at a time
+# using Michigan State University's high performance computing system.
+# A submission script used to process the data is title "2-AISRasterization.SB".
+########################################################################
 
+# Load libraries 
 library(raster)
 library(sf)
 library(dplyr)
@@ -25,51 +42,6 @@ traffic <- lapply(unique(idx), function(x){do.call(rbind, files[which(idx == x)]
 # Load in sea ice data & isolate just cell ids 
 iceconsf <- st_read("../Data_Raw/Ice_SMOS.shp") %>% select(id)
 
-
-#######################################################################################
-# Method 1: For loop
-#######################################################################################
-# Takes forever, but uses less memory... 
-
-# registerDoParallel(cores=as.numeric(Sys.getenv("SLURM_CPUS_ON_NODE")[1]))
-# 
-# print(paste0("Traffic list length: ", length(traffic)))
-# 
-# trafficcells <- foreach(i = 1:12,.packages = c("raster", "sf", "dplyr", "tidyr")) %dopar% {
-#   print(paste0("Processing month: ", i))
-#   t <- traffic[[i]] %>% st_set_precision(1e6) %>% st_make_valid()
-#   df <- data.frame(years = c(), months =c(), cells=c(), traffic=c())
-#   t$year <- substr(t$AIS_ID, start=11, stop =14)
-#   t$month <- substr(t$AIS_ID, start=15, stop =16)
-#   intersections_mat <- sf::st_intersects(t, iceconsf, sparse=F)
-#   tin <- t[which(rowSums(intersections_mat) > 0),]
-#   for(j in 1:length(tin$AIS_ID)){
-#     if(j %% 1000 == 0){
-#       print(paste0(round(j/length(tin$AIS_ID), 2)*100, "% finished."))
-#     }
-#     lenin <- st_intersection(tin[j,], iceconsf) %>% mutate(newlen=st_length(.)) %>% st_drop_geometry() %>% select(id, newlen)
-#     dftemp <- data.frame(years=rep(t$year[1], length(lenin$id)),
-#                          months=rep(t$month[1], length(lenin$id)),
-#                          cells= lenin$id,
-#                          traffic=lenin$newlen)
-#   df <- rbind(df, dftemp)
-#   }
-#   return(df)
-# }
-# 
-# trafficcells <- do.call(rbind, trafficcells)
-# trafficcellsnew <- trafficcells %>% group_by(years, months, cells) %>% summarize(traffic_km = as.numeric(sum(traffic)/1000))
-# 
-# write.csv(trafficcellsnew, paste0("../Data_Processed/TrafficInIcePixels_", year, ".csv"))
-# 
-# 
-# 
-# (proc.time()-start)/60
-# browseURL("https://www.youtube.com/watch?v=K1b8AhIsSYQ")
-
-#################################################################################
-# Method 2: Apply 
-# Faster, but uses a lot of memory so it doesn't work on 2018-2020
 
 print(paste0("Traffic list length: ", length(traffic)))
 
