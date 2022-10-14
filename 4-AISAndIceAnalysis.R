@@ -289,7 +289,25 @@ alldf$winterid <- ifelse(alldf$year == 2015 & alldf$month < 5, 1,
                   ifelse(alldf$year == 2020 & alldf$month < 5, 6, 
                   ifelse(alldf$year == 2020 & alldf$month > 5, 7, NA))))))))))))
 
-monthstats <- alldf %>% group_by(year, month, winterid) %>% summarize(iceext = sum(ifelse(icecon >= 15, 1, 0))*622.109950, traffic_km = sum(traffic_km), nShips = sum(nShips))
+monthstats <- alldf %>% 
+  group_by(year, month, winterid) %>% 
+  summarize(iceext = sum(ifelse(icecon >= 15, 1, 0))*622.109950, 
+            traffic_km = sum(traffic_km),
+            nShips = sum(nShips))
+
+miz <- alldf %>% filter(icecon >=15, icecon < 80) %>% group_by(year, month, winterid) %>% 
+  summarize(traffic_km_MIZ = sum(traffic_km),
+            nShips_MIZ = sum(nShips))
+
+packice <- alldf %>% filter(icecon > 80) %>% group_by(year, month, winterid) %>% 
+  summarize(traffic_km_Pack = sum(traffic_km),
+            nShips_Pack = sum(nShips))
+
+inice <- alldf %>% filter(icecon > 0) %>% group_by(year, month, winterid) %>% 
+  summarize(traffic_km_Ice = sum(traffic_km),
+            nShips_Ice = sum(nShips))
+
+monthstats <- left_join(monthstats, miz) %>% left_join(packice) %>% left_join(inice)
 
 monthstats$timestep <- ifelse(monthstats$month == 10, 1, 
                               ifelse(monthstats$month == 11, 2, 
@@ -303,6 +321,9 @@ monthstats$traffic_1kkm <- monthstats$traffic_km/1000
 
 # Ice extent (average annual and maximum annual)
 annualiceext <- monthstats %>% group_by(winterid) %>% filter(winterid > 1 & winterid < 7) %>% summarize(maxext = max(iceext))
+annualiceext$month <- monthstats$month[which(monthstats$iceext %in% annualiceext$maxext)]
+
+
 otherext <- annualiceext$maxext[which(annualiceext$maxext != min(annualiceext$maxext))]
 minext <- annualiceext$maxext[which(annualiceext$maxext == min(annualiceext$maxext))]
 round(((otherext-minext)/otherext)*100,2) # Percent difference in maximum ice extent between highest and lowest extent years 
@@ -312,15 +333,19 @@ minext/studyareasize_km2
 
 coeff <- 2000 # median(monthstats$iceext/monthstats$traffic_1kkm)
 
-monthstatscompletewinters <- monthstats %>% filter(winterid > 1 & winterid < 7)
-labs <- c("2015-2016", "2016-2017", "2017-2018", "2018-2019", "2019-2020")
+labs <- c("2015", "2015-2016", "2016-2017", "2017-2018", "2018-2019", "2019-2020", "2020")
 
 options(scipen=10000)
 
+
+############################################################################
+# Traffic in ice by months - LINE CHART 
+############################################################################
+
 ggplot() +
-  geom_line(data=monthstatscompletewinters, aes(x=timestep, y =iceext, group=winterid, col=as.factor(winterid)),lwd=1.5,lty=2) +
-  geom_line(data=monthstatscompletewinters, aes(x=timestep, y = traffic_1kkm*coeff, group=winterid, col=as.factor(winterid)),lwd=1.5) +
-  scale_color_manual(labels=labs, values=rev(viridis::viridis(5)), name="Winter") + 
+  geom_line(data=monthstats, aes(x=timestep, y =iceext, group=winterid, col=as.factor(winterid)),lwd=1.5,lty=2) +
+  geom_line(data=monthstats, aes(x=timestep, y = traffic_1kkm*coeff, group=winterid, col=as.factor(winterid)),lwd=1.5) +
+  scale_color_manual(labels=labs, values=rev(viridis::viridis(7)), name="Winter") + 
   xlab("") +
   scale_x_continuous(breaks=1:7, labels = c("Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr") ) +
   scale_y_continuous(name = expression("Sea Ice Extent "~(km^2)),
@@ -334,9 +359,9 @@ ggsave("../Figures/IceAndAIS_MonthlyLines.png", width=9, height=6, units="in")
 
 
 ggplot() +
-  geom_line(data=monthstatscompletewinters, aes(x=timestep, y =iceext, group=winterid, col=as.factor(winterid)),lwd=1.5,lty=2) +
-  geom_line(data=monthstatscompletewinters, aes(x=timestep, y = traffic_1kkm*coeff, group=winterid), alpha=0,lwd=1.5) +
-  scale_color_manual(labels=labs, values=rev(viridis::viridis(5)), name="Winter") + 
+  geom_line(data=monthstats, aes(x=timestep, y =iceext, group=winterid, col=as.factor(winterid)),lwd=1.5,lty=2) +
+  geom_line(data=monthstats, aes(x=timestep, y = traffic_1kkm*coeff, group=winterid), alpha=0,lwd=1.5) +
+  scale_color_manual(labels=labs, values=rev(viridis::viridis(7)), name="Winter") + 
   xlab("") +
   scale_x_continuous(breaks=1:7, labels = c("Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr") ) +
   scale_y_continuous(name = expression("Sea Ice Extent "~(km^2)),
@@ -347,35 +372,6 @@ ggplot() +
 
 ggsave("../Figures/IceAndAIS_MonthlyLines_IceOnly.png", width=9, height=6, units="in")
 
-############################################################################
-# Traffic in ice by months - LINE CHART 
-############################################################################
-
-inice <- alldf[which(alldf$icecon > 0 & alldf$traffic_km > 0),]
-
-monthinice <- inice %>% group_by(year, month, winterid) %>% summarize(traffic_km = sum(traffic_km)) %>% filter(winterid > 1 & winterid < 7)
-
-
-monthinice$timestep <- ifelse(monthinice$month == 10, 1, 
-                              ifelse(monthinice$month == 11, 2, 
-                                     ifelse(monthinice$month == 12, 3, 
-                                            ifelse(monthinice$month == 1, 4, 
-                                                   ifelse(monthinice$month == 2, 5,
-                                                          ifelse(monthinice$month == 3, 6,
-                                                                 ifelse(monthinice$month == 4, 7, NA)))))))
-
-
-ggplot() +
-  geom_line(data=monthinice, aes(x=timestep, y =traffic_km, group=winterid, col=as.factor(winterid)),lwd=1.5) +
-  scale_color_manual(labels=labs, values=rev(viridis::viridis(5)), name="Winter") + 
-  xlab("") +
-  scale_x_continuous(breaks=1:7, labels = c("Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr") ) +
-  scale_y_continuous(name = "Total Vessel Traffic\nin Ice (km)") +
-  theme_bw(base_size = 20) +
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank())
-
-# ggsave("../Figures/AISInIce_MonthlyLines.png", width=9, height=6, units="in")
 
 ##################################################################################
 # Annual traffic totals - BAR CHARTS 
@@ -389,17 +385,18 @@ yearinMIZ <- alldf %>% filter(icecon > 0, icecon < 80, traffic_km > 0) %>%
             totfish_km = sum(fish_km),
             tottank_km = sum(tank_km), 
             totother_km = sum(other_km),
-            ncells=n()) %>% 
-  filter(winterid > 1 & winterid < 7)
+            ncells=n())
 
 ggplot(yearinMIZ, aes(x=winterid, y=traffic_km)) +
   geom_bar(stat="identity") +
-  scale_x_continuous(breaks=2:6, labels=labs) + 
+  scale_x_continuous(breaks=1:7, labels=labs) + 
   scale_y_continuous(breaks=seq(0,300000, by=50000)) +
   theme_bw(base_size = 20) +
   xlab("Winter") +
   ylab("Total Vessel Traffic\nin Marginal Ice Zone (km)") + 
-  theme(panel.grid.major = element_blank(), 
+  geom_text(aes(label=c("*", "", "", "","","","*")), position=position_stack(vjust=1), size=5) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
         legend.position = "none")
 ggsave("../Figures/AISInMIZ_AnnualBar.png", width=9, height=6, units="in")
@@ -411,12 +408,13 @@ yearinMIZlong <- yearinMIZ %>%
 ggplot(yearinMIZlong, aes(x=winterid, y=distance, fill=type)) +
   geom_bar(stat="identity", position="stack") +
   scale_fill_manual(values=qualitative_hcl(4, palette = "Dynamic"), name="Vessel Type", labels=c("Cargo", "Fishing", "Other", "Tanker")) +
-  scale_x_continuous(breaks=2:6, labels=labs) + 
+  scale_x_continuous(breaks=1:7, labels=labs) + 
   # scale_y_continuous(breaks=seq(0,50000, by=10000)) +
   theme_bw(base_size = 20) +
   xlab("Winter") +
   ylab("Total Vessel Traffic\nin Marginal Ice Zone (km)") + 
-  theme(panel.grid.major = element_blank(), 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank())
 ggsave("../Figures/AISInMIZIce_Types_AnnualBar.png", width=9, height=6, units="in")
 
@@ -428,17 +426,18 @@ yearinlotsaice <- alldf[which(alldf$icecon > 80 & alldf$traffic_km > 0),] %>%
             totfish_km = sum(fish_km),
             tottank_km = sum(tank_km), 
             totother_km = sum(other_km),
-            ncells=n()) %>% 
-  filter(winterid > 1 & winterid < 7)
+            ncells=n())
 
 ggplot(yearinlotsaice, aes(x=winterid, y=traffic_km)) +
   geom_bar(stat="identity") +
-  scale_x_continuous(breaks=2:6, labels=labs) + 
+  scale_x_continuous(breaks=1:7, labels=labs) + 
   scale_y_continuous(breaks=seq(0,50000, by=10000)) +
   theme_bw(base_size = 20) +
   xlab("") +
   ylab("Total Vessel Traffic\nin Pack Ice (km)") + 
-  theme(panel.grid.major = element_blank(), 
+  geom_text(aes(label=c("*", "", "", "","","","*")), position=position_stack(vjust=1), size=5) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         legend.position = "none")
 ggsave("../Figures/AISIn80Ice_AnnualBar.png", width=9, height=6, units="in")
@@ -450,25 +449,82 @@ yearinlotsaicelong <- yearinlotsaice %>%
 ggplot(yearinlotsaicelong, aes(x=winterid, y=distance, fill=type)) +
   geom_bar(stat="identity", position="stack") +
   scale_fill_manual(values=qualitative_hcl(4, palette = "Dynamic"), name="Vessel Type", labels=c("Cargo", "Fishing", "Other", "Tanker")) +
-  scale_x_continuous(breaks=2:6, labels=labs) + 
+  scale_x_continuous(breaks=1:7, labels=labs) + 
   scale_y_continuous(breaks=seq(0,50000, by=10000)) +
   theme_bw(base_size = 20) +
   xlab("") +
   ylab("Total Vessel Traffic\nin Pack Ice (km)") + 
-  theme(panel.grid.major = element_blank(), 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank())
 ggsave("../Figures/AISIn80Ice_Types_AnnualBar.png", width=9, height=6, units="in")
+
+##################################################################################
+# Monthly traffic totals - LINE CHARTS 
+##################################################################################
+
+ggplot() +
+  geom_line(data=monthstats, aes(x=timestep, y =traffic_km_MIZ, group=winterid, col=as.factor(winterid)),lwd=1.5) +
+  scale_color_manual(labels=labs, values=rev(viridis::viridis(7)), name="Winter") + 
+  xlab("") +
+  scale_x_continuous(breaks=1:7, labels = c("Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr") ) +
+  scale_y_continuous(name = "Total Vessel Traffic\nin MIZ (km)") +
+  theme_bw(base_size = 20) +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+
+ggsave("../Figures/AISinIce_MonthlyLines_km_MIZ.png", width=9, height=6, units="in")
+
+ggplot() +
+  geom_line(data=monthstats, aes(x=timestep, y =traffic_km_Pack, group=winterid, col=as.factor(winterid)),lwd=1.5) +
+  scale_color_manual(labels=labs, values=rev(viridis::viridis(7)), name="Winter") + 
+  xlab("") +
+  scale_x_continuous(breaks=1:7, labels = c("Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr") ) +
+  scale_y_continuous(name = "Total Vessel Traffic\nin Pack Ice (km)") +
+  theme_bw(base_size = 20) +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+
+ggsave("../Figures/AISinIce_MonthlyLines_km_Pack.png", width=9, height=6, units="in")
+
+
+ggplot() +
+  geom_line(data=monthstats, aes(x=timestep, y =nShips_MIZ, group=winterid, col=as.factor(winterid)),lwd=1.5) +
+  scale_color_manual(labels=labs, values=rev(viridis::viridis(7)), name="Winter") + 
+  xlab("") +
+  scale_x_continuous(breaks=1:7, labels = c("Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr") ) +
+  scale_y_continuous(name = "Number of Ships\nin MIZ (km)") +
+  theme_bw(base_size = 20) +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+
+ggsave("../Figures/AISinIce_MonthlyLines_nShips_MIZ.png", width=9, height=6, units="in")
+
+ggplot() +
+  geom_line(data=monthstats, aes(x=timestep, y =nShips_Pack, group=winterid, col=as.factor(winterid)),lwd=1.5) +
+  scale_color_manual(labels=labs, values=rev(viridis::viridis(7)), name="Winter") + 
+  xlab("") +
+  scale_x_continuous(breaks=1:7, labels = c("Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr") ) +
+  scale_y_continuous(name = "Number of Ships\nin Pack Ice") +
+  theme_bw(base_size = 20) +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+
+ggsave("../Figures/AISinIce_MonthlyLines_nShips_Pack.png", width=9, height=6, units="in")
+
+
 
 ##################################################################################
 # Growth in vessel traffic by ice con 
 ##################################################################################
 
 # Change in vessel traffic by ice concentration 
-totaltraff <- alldf %>% group_by(winterid) %>% summarize(traffic_km = sum(traffic_km))
+totaltraff <- monthstats %>% group_by(winterid) %>% summarize(traffic_km = sum(traffic_km), 
+                                                         traffic_km_MIZ=sum(traffic_km_MIZ, na.rm=T), 
+                                                         traffic_km_Pack = sum(traffic_km_Pack, na.rm=T))
 pctchangetotal <- round((totaltraff$traffic_km[totaltraff$winterid == 6]-totaltraff$traffic_km[totaltraff$winterid == 2])/totaltraff$traffic_km[totaltraff$winterid == 6]*100,2)
-pctchangeinlotsaice <- round((yearinlotsaice$traffic_km[yearinlotsaice$winterid == 6]-yearinlotsaice$traffic_km[yearinlotsaice$winterid == 2])/yearinlotsaice$traffic_km[yearinlotsaice$winterid == 6]*100,2)
-pctchangeinMIZ <- round((yearinMIZ$traffic_km[yearinMIZ$winterid == 6]-yearinMIZ$traffic_km[yearinMIZ$winterid == 2])/yearinMIZ$traffic_km[yearinMIZ$winterid == 6]*100,2)
-
+pctchangeinMIZ <- round((totaltraff$traffic_km_MIZ[totaltraff$winterid == 6]-totaltraff$traffic_km_MIZ[totaltraff$winterid == 2])/totaltraff$traffic_km_MIZ[totaltraff$winterid == 6]*100,2)
+pctchangeinPack <- round((totaltraff$traffic_km_Pack[totaltraff$winterid == 6]-totaltraff$traffic_km_Pack[totaltraff$winterid == 2])/totaltraff$traffic_km_Pack[totaltraff$winterid == 6]*100,2)
 
 # Growth in vessel traffic by ice concentration 
 growthbyicecon <- alldf %>% 

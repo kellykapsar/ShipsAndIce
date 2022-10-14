@@ -80,23 +80,43 @@ allsf <- st_read("../Data_Processed/IceTrafficDataFrame.shp")
 
 alldf <- read.csv("../Data_Processed/IceTrafficDataFrame.csv") %>% dplyr::select(-X)
 
+
+
+alldf$winterid <- ifelse(alldf$year == 2015 & alldf$month < 5, 1, 
+                  ifelse(alldf$year == 2015 & alldf$month > 5, 2, 
+                  ifelse(alldf$year == 2016 & alldf$month < 5, 2, 
+                  ifelse(alldf$year == 2016 & alldf$month > 5, 3, 
+                  ifelse(alldf$year == 2017 & alldf$month < 5, 3, 
+                  ifelse(alldf$year == 2017 & alldf$month > 5, 4, 
+                  ifelse(alldf$year == 2018 & alldf$month < 5, 4, 
+                  ifelse(alldf$year == 2018 & alldf$month > 5, 5, 
+                  ifelse(alldf$year == 2019 & alldf$month < 5, 5, 
+                  ifelse(alldf$year == 2019 & alldf$month > 5, 6, 
+                  ifelse(alldf$year == 2020 & alldf$month < 5, 6, 
+                  ifelse(alldf$year == 2020 & alldf$month > 5, 7, NA))))))))))))
+
 # ID cells in areas of high concentration of bowheads
 hiconcells <- allsf$id[st_intersects(allsf, hicon, sparse=F)]
 
 hicontraff <- alldf[alldf$id %in% hiconcells,]
-hicontotals <- hicontraff %>%  filter(month %in% c(11, 12, 1, 2, 3)) %>% group_by(year) %>% summarize(traff=sum(traffic_km))
+hicontotals <- hicontraff %>%  filter(month %in% c(11, 12, 1, 2, 3)) %>% group_by(winterid) %>% summarize(traff=sum(traffic_km), nShips=sum(nShips))
 
+labs <- c("2015", "2015-2016", "2016-2017", "2017-2018", "2018-2019", "2019-2020", "2020")
 
-ggplot(hicontotals, aes(x=year, y=traff)) +
+ggplot(hicontotals, aes(x=winterid, y=traff)) +
   geom_bar(stat="identity") +
-  # scale_fill_manual(labels=2015:2020, values=rev(viridis::viridis(6)), name="Year") +
-  scale_x_continuous(breaks= 2015:2020) +
+  scale_fill_manual(labels=labs,values=rev(viridis::viridis(7)), name="Winter") +
+  scale_x_continuous(breaks=1:7, labels=labs) +
   # scale_y_continuous(breaks=seq(0,300000, by=50000)) +
   theme_bw(base_size = 20) +
+  geom_text(aes(label=c("*", "", "", "","","","*")), position=position_stack(vjust=1), size=5) +
   xlab("") +
   ylab("Total Vessel Traffic in Bowhead \nWinter High Concentration Areas") + 
-  theme(panel.grid.major = element_blank(), 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
         legend.position = "none")
-# ggsave("../Figures/AISInBowheadHiCon_AnnualBar.png", width=9, height=6, units="in")
+ggsave("../Figures/AISInBowheadHiCon_km_AnnualBar.png", width=9, height=6, units="in")
+
+
 
