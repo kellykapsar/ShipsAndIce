@@ -75,14 +75,14 @@ pizzolato <- function(df, traffcol, icecol){
   if(length(which(traff != 0)) == 0){
     return(NA)
   }
-  maxice <- max(ice[which(traff != 0),])
-  lotsaice <- which(ice > maxice & traff == 0)
-  keeplotsaice <- which(ice[lotsaice,] == min(ice[lotsaice,]))
+  maxice <- max(ice[which(traff != 0),]) # (1) highest ice con among years with shipping
+  lotsaice <- which(ice > maxice & traff == 0) # (2) ice con > max & no shipping
+  keeplotsaice <- which(ice[lotsaice,] == min(ice[lotsaice,])) # (2) retain year with lowest ice con
   lotsaicenew <- lotsaice[-keeplotsaice]
-  traffnew <- traff[-lotsaicenew,]
-  icenew <- ice[-lotsaicenew,]
+  traffnew <- traff[-lotsaicenew,] # (2) discard remaining years
+  icenew <- ice[-lotsaicenew,] 
   if(length(traffnew) > 0){
-    cortest <- cor.test(traffnew, icenew, method="kendall")
+    cortest <- cor.test(traffnew, icenew, method="kendall") # (4) Kendall's tau-a (two-tailed)
     return(cortest)
   }
   if(length(traffnew) <= 0){
@@ -92,20 +92,20 @@ pizzolato <- function(df, traffcol, icecol){
 
 # Ice concentration and traffic 
 pizzolato_conkm <- function(df){
-  if(length(which(df$traffic_km != 0)) == 0){
+  if(length(which(df$traffic_km != 0)) == 0){ 
     return(NA)
   }
-  maxice <- max(df$icecon[which(df$traffic_km != 0)])
-  lotsaice <- which(df$icecon > maxice & df$traffic_km == 0)
+  maxice <- max(df$icecon[which(df$traffic_km != 0)]) # (1) highest ice con among years with shipping
+  lotsaice <- which(df$icecon > maxice & df$traffic_km == 0) # (2) ice con > max & no shipping
   dfnew <- df
   
   if(length(lotsaice) > 1){
-    keeplotsaice <- which(df$icecon[lotsaice] == min(df$icecon[lotsaice]))
+    keeplotsaice <- which(df$icecon[lotsaice] == min(df$icecon[lotsaice])) # (2) retain year with lowest ice con
     lotsaicenew <- lotsaice[-keeplotsaice]
-    dfnew <- df[-lotsaicenew,]
+    dfnew <- df[-lotsaicenew,] # (2) discard remaining years
   }
   
-  notrafforice <- dfnew[which(dfnew$traffic_km == 0 & dfnew$icecon == 0),]
+  notrafforice <- dfnew[which(dfnew$traffic_km == 0 & dfnew$icecon == 0),] # remove all but one year with no traffic or ice
   
   dfnewest <- dfnew
   
@@ -114,11 +114,11 @@ pizzolato_conkm <- function(df){
     dfnewest <- rbind(dfnewest, notrafforice[1,])
   }
   
-  if(length(dfnewest$traffic_km) >= 20){
-    cortest <- cor.test(dfnewest$traffic_km, dfnewest$icecon, method="kendall")
+  if(length(dfnewest$year) > 0){
+    cortest <- cor.test(dfnewest$traffic_km, dfnewest$icecon, method="kendall") # (4) Kendall's tau-a (two-tailed)
     return(cortest)
   }
-  if(length(dfnewest$traffic_km) < 20){
+  if(length(dfnewest$year) <= 0){
     return(NA)
   }
 }
@@ -133,49 +133,21 @@ pizzolato_thickkm <- function(df){
   keeplotsaice <- which(df$icethick[lotsaice] == min(df$icethick[lotsaice]))
   lotsaicenew <- lotsaice[-keeplotsaice]
   dfnew <- df[-lotsaicenew,]
-  if(length(dfnew$traffic_km) > 0){
-    cortest <- cor.test(dfnew$traffic_km, dfnew$icethick, method="kendall")
+  
+  notrafforice <- dfnew[which(dfnew$traffic_km == 0 & dfnew$icethick == 0),] # remove all but one year with no traffic or ice
+  
+  dfnewest <- dfnew
+  
+  if(length(notrafforice$year) > 0){
+    dfnewest <- dfnew[-which(dfnew$traffic_km == 0 & dfnew$icethick == 0),]
+    dfnewest <- rbind(dfnewest, notrafforice[1,])
+  }
+  
+  if(length(dfnewest$traffic_km) > 0){
+    cortest <- cor.test(dfnewest$traffic_km, dfnewest$icethick, method="kendall")
     return(cortest)
   }
-  if(length(dfnew$traffic_km) <= 0){
-    return(NA)
-  }
-}
-
-# Ice concentration and number of ships
-pizzolato_connship <- function(df){
-  if(length(which(df$nShips != 0)) == 0){
-    return(NA)
-  }
-  maxice <- max(df$icecon[which(df$nShips != 0)])
-  lotsaice <- which(df$icecon > maxice & df$nShips == 0)
-  keeplotsaice <- which(df$icecon[lotsaice] == min(df$icecon[lotsaice]))
-  lotsaicenew <- lotsaice[-keeplotsaice]
-  dfnew <- df[-lotsaicenew,]
-  if(length(dfnew$nShips) > 0){
-    cortest <- cor.test(dfnew$nShips, dfnew$icecon, method="kendall")
-    return(cortest)
-  }
-  if(length(dfnew$nShips) <= 0){
-    return(NA)
-  }
-}
-
-# Ice thickness and number of ships
-pizzolato_thicknship <- function(df){
-  if(length(which(df$nShips != 0)) == 0){
-    return(NA)
-  }
-  maxice <- max(df$icethick[which(df$nShips != 0)])
-  lotsaice <- which(df$icethick > maxice & df$nShips == 0)
-  keeplotsaice <- which(df$icethick[lotsaice] == min(df$icethick[lotsaice]))
-  lotsaicenew <- lotsaice[-keeplotsaice]
-  dfnew <- df[-lotsaicenew,]
-  if(length(dfnew$nShips) > 0){
-    cortest <- cor.test(dfnew$nShips, dfnew$icethick, method="kendall")
-    return(cortest)
-  }
-  if(length(dfnew$nShips) <= 0){
+  if(length(dfnewest$traffic_km) <= 0){
     return(NA)
   }
 }
@@ -227,34 +199,11 @@ mods <- alldfnest %>%
 
 modelresults <- allsf %>% dplyr::select(id) %>% left_join(., mods[,c("id", "estimate", "statistic", "p.value")])
 sigcells <- st_coordinates(st_centroid(modelresults[which(modelresults$p.value < 0.05),])) %>% as.data.frame()
-plotKendall(modelresults, sigcells, "KendallCorrelationMap_ConKm_NEW20220412")
+plotKendall(modelresults, sigcells, "KendallCorrelationMap_ConKm_20230424")
 
 # Percent of significant pixels with negative correlation coefficients 
 sum(modelresults$estimate[which(modelresults$p.value < 0.05)] <0)/length(modelresults$estimate[which(modelresults$p.value < 0.05)])
 
-# ### Ice con and number of ships
-# mods <- alldfnest %>%
-#   mutate(cortest = map(data, function(df){pizzolato_connship(df)}),
-#          tidied = map(cortest, broom::tidy)) %>%
-#   unnest(tidied)
-# 
-# 
-# modelresults <- allsf %>% dplyr::select(id) %>% left_join(., mods[,c("id", "estimate", "statistic", "p.value")])
-# sigcells <- st_coordinates(st_centroid(modelresults[which(modelresults$p.value < 0.05),])) %>% as.data.frame()
-# plotKendall(modelresults, sigcells, "KendallCorrelationMap_ConnShips")
-# 
-# 
-# ### Ice thickness and number of ships
-# mods <- alldfnest %>%
-#   mutate(cortest = map(data, function(df){pizzolato_thicknship(df)}),
-#          tidied = map(cortest, broom::tidy)) %>%
-#   unnest(tidied)
-# 
-# 
-# modelresults <- allsf %>% dplyr::select(id) %>% left_join(., mods[,c("id", "estimate", "statistic", "p.value")])
-# sigcells <- st_coordinates(st_centroid(modelresults[which(modelresults$p.value < 0.05),])) %>% as.data.frame()
-# plotKendall(modelresults, sigcells, "KendallCorrelationMap_ThicknShips")
-# 
 # ### Ice thickness and total vessel traffic
 # mods <- alldfnest %>%
 #   mutate(cortest = map(data, function(df){pizzolato_thickkm(df)}),
@@ -265,6 +214,9 @@ sum(modelresults$estimate[which(modelresults$p.value < 0.05)] <0)/length(modelre
 # modelresults <- allsf %>% dplyr::select(id) %>% left_join(., mods[,c("id", "estimate", "statistic", "p.value")])
 # sigcells <- st_coordinates(st_centroid(modelresults[which(modelresults$p.value < 0.05),])) %>% as.data.frame()
 # plotKendall(modelresults, sigcells, "KendallCorrelationMap_ThickKm")
+# 
+# # Percent of significant pixels with negative correlation coefficients 
+# sum(modelresults$estimate[which(modelresults$p.value < 0.05)] <0)/length(modelresults$estimate[which(modelresults$p.value < 0.05)])
 
 ############################################################################
 # Case study 
