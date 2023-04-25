@@ -99,7 +99,40 @@ alldf$winterid <- ifelse(alldf$year == 2015 & alldf$month < 5, 1,
 hiconcells <- allsf$id[st_intersects(allsf, hicon, sparse=F)]
 
 hicontraff <- alldf[alldf$id %in% hiconcells,]
-hicontotals <- hicontraff %>%  filter(month %in% c(11, 12, 1, 2, 3)) %>% group_by(winterid) %>% summarize(traff=sum(traffic_km), nShips=sum(nShips))
+hicontotals <- hicontraff %>%  filter(month %in% c(11, 12, 1, 2, 3)) %>% group_by(winterid) %>% summarize(traff=sum(traffic_km))
+
+hicon_traffchange <- ((hicontotals$traff[hicontotals$winterid == 6]-hicontotals$traff[hicontotals$winterid == 2])/hicontotals$traff[hicontotals$winterid == 2])*100
+
+hiconarea_km2 <- st_area(hicon)/1e6
+
+# ID cells in areas of  concentration of bowheads
+concells <- allsf$id[st_intersects(allsf, con, sparse=F)]
+
+contraff <- alldf[alldf$id %in% concells,]
+contotals <- contraff %>%  filter(month %in% c(11, 12, 1, 2, 3)) %>% group_by(winterid) %>% summarize(traff=sum(traffic_km))
+
+con_traffchange <- ((contotals$traff[contotals$winterid == 6]-contotals$traff[contotals$winterid == 2])/contotals$traff[contotals$winterid == 2])*100
+
+conarea_km2 <- st_area(con)/1e6
+
+# ID cells in winter range of bowheads
+rangcells <- allsf$id[st_intersects(allsf, rang, sparse=F)]
+
+rangtraff <- alldf[alldf$id %in% rangcells,]
+rangtotals <- rangtraff %>%  filter(month %in% c(11, 12, 1, 2, 3)) %>% group_by(winterid) %>% summarize(traff=sum(traffic_km))
+
+rang_traffchange <- ((rangtotals$traff[rangtotals$winterid == 6]-rangtotals$traff[rangtotals$winterid == 2])/rangtotals$traff[rangtotals$winterid == 2])*100
+
+rangarea_km2 <- st_area(rang)/1e6
+
+# Total change in traffic
+alltotals <- alldf %>%  filter(month %in% c(11, 12, 1, 2, 3)) %>% group_by(winterid) %>% summarize(traff=sum(traffic_km))
+
+all_traffchange <- ((alltotals$traff[alltotals$winterid == 6]-alltotals$traff[alltotals$winterid == 2])/alltotals$traff[alltotals$winterid == 2])*100
+
+allarea_km2 <- st_area(allsf)/1e6
+
+
 
 labs <- c("2015", "2015-2016", "2016-2017", "2017-2018", "2018-2019", "2019-2020", "2020")
 
@@ -116,7 +149,7 @@ ggplot(hicontotals, aes(x=winterid, y=traff)) +
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
         legend.position = "none")
-ggsave("../Figures/AISInBowheadHiCon_km_AnnualBar.png", width=9, height=6, units="in")
+# ggsave("../Figures/AISInBowheadHiCon_km_AnnualBar.png", width=9, height=6, units="in")
 
 
 
