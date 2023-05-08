@@ -102,7 +102,7 @@ pizzolato_conkm <- function(df){
   if(length(lotsaice) > 1){
     keeplotsaice <- which(df$icecon[lotsaice] == min(df$icecon[lotsaice])) # (2) retain year with lowest ice con
     lotsaicenew <- lotsaice[-keeplotsaice]
-    dfnew <- df[-lotsaicenew,] # (2) discard remaining years
+    ifelse(length(lotsaicenew) != 0, dfnew <- df[-lotsaicenew,], dfnew <- df) # (2) discard remaining years
   }
   
   notrafforice <- dfnew[which(dfnew$traffic_km == 0 & dfnew$icecon == 0),] # remove all but one year with no traffic or ice
@@ -132,9 +132,9 @@ pizzolato_thickkm <- function(df){
   lotsaice <- which(df$icethick > maxice & df$traffic_km == 0)
   keeplotsaice <- which(df$icethick[lotsaice] == min(df$icethick[lotsaice]))
   lotsaicenew <- lotsaice[-keeplotsaice]
-  dfnew <- df[-lotsaicenew,]
+  ifelse(length(lotsaicenew) != 0, dfnew <- df[-lotsaicenew,], dfnew <- df)
   
-  notrafforice <- dfnew[which(dfnew$traffic_km == 0 & dfnew$icethick == 0),] # remove all but one year with no traffic or ice
+    notrafforice <- dfnew[which(dfnew$traffic_km == 0 & dfnew$icethick == 0),] # remove all but one year with no traffic or ice
   
   dfnewest <- dfnew
   
@@ -155,10 +155,12 @@ pizzolato_thickkm <- function(df){
 # Map the results of the kendall correlation 
 plotKendall <- function(modsf, sigs, savename){
   p3 <- ggplot() +
-    geom_sf(data=basemap.crop, fill="#f0f0f0", lwd=0) +
+    geom_sf(data=basemap.crop, fill="white", lwd=0.25) +
     # geom_sf(data=aisbounds, fill=NA, color="black", lwd=1)+
     geom_sf(data=modsf, aes(fill=estimate)) +
-    colorspace::scale_fill_continuous_divergingx("RdBu", name="", rev=T) +
+    colorspace::scale_fill_continuous_divergingx("RdBu", name="Correlation", rev=T, 
+                                                 labels = c("-1", "-0.8", "-0.6", "-0.4", "-0.2", "0", "0.2", "0.4"), 
+                                                 breaks = c(-1, -0.8, -0.6, -0.4, -0.2, 0, 0.2, 0.4)) +
     geom_point(data=sigs, aes(x = sigs[,1], y = sigs[,2]), shape=8, size=0.1) +
     xlab("") +
     ylab("") +
@@ -166,13 +168,21 @@ plotKendall <- function(modsf, sigs, savename){
     scale_y_continuous(expand = c(0, 0)) +
     theme_bw() +
     blank()+
-    theme(legend.title = element_text(size = 16),
-          legend.text = element_text(size = 16),
-          legend.position = c(0.1,0.2),
+    guides(fill = guide_colourbar(barwidth = 15, 
+                                  barheight = 1, 
+                                  direction="horizontal", 
+                                  title.position="top",
+                                  title.hjust = 0.5,
+                                  ticks.colour="black", 
+                                  frame.colour = "black", 
+                                  ticks.linewidth = 0.75)) +
+    theme(legend.title = element_text(size = 12),
+          legend.text = element_text(size = 12),
+          legend.position = c(0.25,0.1),
           legend.background = element_rect(fill = "white", color = "black"),
           axis.ticks = element_blank(),
           axis.text=element_blank(),
-          panel.background = element_rect(fill = "#cfd3d4"),
+          panel.background = element_rect(fill = "white"),
           panel.border =  element_rect(colour = "black"),
           panel.grid.major = element_line(colour = "transparent"))
   
@@ -187,36 +197,72 @@ plotKendall <- function(modsf, sigs, savename){
 ############################################################################
 # Kendall Correlation and Map
 ############################################################################
-
+# 
 alldfnest <- alldf %>% group_by(id) %>% nest()
-
-### Ice con and total vessel traffic 
-mods <- alldfnest %>% 
-  mutate(cortest = map(data, function(df){pizzolato_conkm(df)}), 
-         tidied = map(cortest, broom::tidy)) %>% 
-  unnest(tidied)
-
-
-modelresults <- allsf %>% dplyr::select(id) %>% left_join(., mods[,c("id", "estimate", "statistic", "p.value")])
-sigcells <- st_coordinates(st_centroid(modelresults[which(modelresults$p.value < 0.05),])) %>% as.data.frame()
-plotKendall(modelresults, sigcells, "KendallCorrelationMap_ConKm_20230424")
-
-# Percent of significant pixels with negative correlation coefficients 
-sum(modelresults$estimate[which(modelresults$p.value < 0.05)] <0)/length(modelresults$estimate[which(modelresults$p.value < 0.05)])
-
-# ### Ice thickness and total vessel traffic
-# mods <- alldfnest %>%
-#   mutate(cortest = map(data, function(df){pizzolato_thickkm(df)}),
-#          tidied = map(cortest, broom::tidy)) %>%
+# 
+# ### Ice con and total vessel traffic 
+# mods <- alldfnest %>% 
+#   mutate(cortest = map(data, function(df){pizzolato_conkm(df)}), 
+#          tidied = map(cortest, broom::tidy)) %>% 
 #   unnest(tidied)
 # 
 # 
 # modelresults <- allsf %>% dplyr::select(id) %>% left_join(., mods[,c("id", "estimate", "statistic", "p.value")])
 # sigcells <- st_coordinates(st_centroid(modelresults[which(modelresults$p.value < 0.05),])) %>% as.data.frame()
-# plotKendall(modelresults, sigcells, "KendallCorrelationMap_ThickKm")
+# plotKendall(modelresults, sigcells, "KendallCorrelationMap_ConKm_20230426")
 # 
 # # Percent of significant pixels with negative correlation coefficients 
 # sum(modelresults$estimate[which(modelresults$p.value < 0.05)] <0)/length(modelresults$estimate[which(modelresults$p.value < 0.05)])
+# 
+# # Total traffic summaries
+# alldf$winterid <- ifelse(alldf$year == 2015 & alldf$month < 5, 1, 
+#                   ifelse(alldf$year == 2015 & alldf$month > 5, 2, 
+#                   ifelse(alldf$year == 2016 & alldf$month < 5, 2, 
+#                   ifelse(alldf$year == 2016 & alldf$month > 5, 3, 
+#                   ifelse(alldf$year == 2017 & alldf$month < 5, 3, 
+#                   ifelse(alldf$year == 2017 & alldf$month > 5, 4, 
+#                   ifelse(alldf$year == 2018 & alldf$month < 5, 4, 
+#                   ifelse(alldf$year == 2018 & alldf$month > 5, 5, 
+#                   ifelse(alldf$year == 2019 & alldf$month < 5, 5, 
+#                   ifelse(alldf$year == 2019 & alldf$month > 5, 6, 
+#                   ifelse(alldf$year == 2020 & alldf$month < 5, 6, 
+#                   ifelse(alldf$year == 2020 & alldf$month > 5, 7, NA))))))))))))
+# 
+# icetraff <- alldf %>% filter(icecon > 0) %>% group_by(year) %>% summarize(traff = sum(traffic_km), 
+#                                                               carg = sum(carg_km),
+#                                                               fish = sum(fish_km), 
+#                                                               tank = sum(tank_km), 
+#                                                               other = sum(other_km))
+# # Percent traffic in ice by vessel type 
+# sum(icetraff$carg)/sum(icetraff$traff)
+# sum(icetraff$tank)/sum(icetraff$traff)
+# sum(icetraff$fish)/sum(icetraff$traff)
+# sum(icetraff$other)/sum(icetraff$traff)
+# 
+# # Total vessel traffic 
+# alltraff <- alldf %>% group_by(year) %>% summarize(traff = sum(traffic_km))
+# sum(icetraff$traff)/sum(alltraff$traff)
+# 
+# icetraffwint <- alldf %>% filter(icecon > 0) %>% group_by(winterid) %>% summarize(traff = sum(traffic_km), 
+#                                                                               carg = sum(carg_km),
+#                                                                               fish = sum(fish_km), 
+#                                                                               tank = sum(tank_km), 
+#                                                                               other = sum(other_km))
+
+
+### Ice thickness and total vessel traffic
+mods <- alldfnest %>%
+  mutate(cortest = map(data, function(df){pizzolato_thickkm(df)}),
+         tidied = map(cortest, broom::tidy)) %>%
+  unnest(tidied)
+
+
+modelresults <- allsf %>% dplyr::select(id) %>% left_join(., mods[,c("id", "estimate", "statistic", "p.value")])
+sigcells <- st_coordinates(st_centroid(modelresults[which(modelresults$p.value < 0.05),])) %>% as.data.frame()
+plotKendall(modelresults, sigcells, "KendallCorrelationMap_ThickKm")
+
+# Percent of significant pixels with negative correlation coefficients
+sum(modelresults$estimate[which(modelresults$p.value < 0.05)] <0)/length(modelresults$estimate[which(modelresults$p.value < 0.05)])
 
 ############################################################################
 # Case study 
@@ -285,7 +331,7 @@ minext/studyareasize_km2
 
 coeff <- 2000 # median(monthstats$iceext/monthstats$traffic_1kkm)
 
-labs <- c("2015", "2015-2016", "2016-2017", "2017-2018", "2018-2019", "2019-2020", "2020")
+labs <- c("2014-2015*", "2015-2016", "2016-2017", "2017-2018", "2018-2019", "2019-2020", "2020-2021*")
 
 options(scipen=10000)
 
@@ -588,22 +634,25 @@ test <- alldf %>%
             totother_km = sum(other_km),
             ncells=n())
 
-testlong <- test %>% select(icecon, totcarg_km, tottank_km, totfish_km, totother_km) %>% gather(-icecon, key=type, value=distance)
+testlong <- test %>% dplyr::select(icecon, totcarg_km, tottank_km, totfish_km, totother_km) %>% gather(-icecon, key=type, value=distance)
 testlong %>% group_by(type) %>% summarize(distance=sum(distance))
 
-ggplot(testlong, aes(x=icecon, y=distance, group=type, color=type)) +
-  geom_line( lwd=2) +
-  scale_color_manual(values=qualitative_hcl(4, palette = "Dynamic"), name="Vessel Type", labels=c("Cargo", "Fishing", "Other", "Tanker")) +
-  scale_x_continuous(breaks= seq(0,100,10), expand = c(0, 0), limits = c(0,NA)) +
-  # scale_y_continuous(breaks=seq(0,250000,50000), expand=c(0,0),limits=c(0, 200000)) +
+ggplot(testlong, aes(x=icecon, y=distance, group=type)) +
+  geom_line(aes(color=type),lwd=1) +
+  geom_point(aes(color=type), size=3) +
+  scale_color_manual(values= brewer.pal(5,"Set1"), name="Vessel Type", labels=c("Cargo", "Fishing", "Other", "Tanker")) +
+  scale_x_continuous(breaks= seq(0,100,10), expand = c(0, 0), limits = c(0,100.5)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0,200000)) +
   theme_bw(base_size = 20) +
   xlab("Sea Ice Concentration (%)") +
   ylab("Vessel Traffic\nin Sea Ice (km)") +
-  theme(panel.grid.major = element_blank(),
+  theme(legend.position=c(0.8,0.8),
+        legend.direction = "vertical",
+        panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         panel.border = element_blank(),
         axis.line = element_line())
-ggsave("../Figures/VesselTrafficbyIceCon_Types_Lineplot.png", width=9, height=6, units="in")
+ggsave("../Figures/VesselTrafficbyIceCon_Types_Lineplot.png", width=8, height=6, units="in")
 
 ggplot(test, aes(x=icecon, y=tottraff_km)) +
   geom_line() +
