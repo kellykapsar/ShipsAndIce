@@ -200,20 +200,20 @@ plotKendall <- function(modsf, sigs, savename){
 # 
 alldfnest <- alldf %>% group_by(id) %>% nest()
 # 
-# ### Ice con and total vessel traffic 
-# mods <- alldfnest %>% 
-#   mutate(cortest = map(data, function(df){pizzolato_conkm(df)}), 
-#          tidied = map(cortest, broom::tidy)) %>% 
-#   unnest(tidied)
-# 
-# 
-# modelresults <- allsf %>% dplyr::select(id) %>% left_join(., mods[,c("id", "estimate", "statistic", "p.value")])
-# sigcells <- st_coordinates(st_centroid(modelresults[which(modelresults$p.value < 0.05),])) %>% as.data.frame()
-# plotKendall(modelresults, sigcells, "KendallCorrelationMap_ConKm_20230426")
-# 
-# # Percent of significant pixels with negative correlation coefficients 
-# sum(modelresults$estimate[which(modelresults$p.value < 0.05)] <0)/length(modelresults$estimate[which(modelresults$p.value < 0.05)])
-# 
+### Ice con and total vessel traffic
+mods <- alldfnest %>%
+  mutate(cortest = map(data, function(df){pizzolato_conkm(df)}),
+         tidied = map(cortest, broom::tidy)) %>%
+  unnest(tidied)
+
+
+modelresults <- allsf %>% dplyr::select(id) %>% left_join(., mods[,c("id", "estimate", "statistic", "p.value")])
+sigcells <- st_coordinates(st_centroid(modelresults[which(modelresults$p.value < 0.05),])) %>% as.data.frame()
+plotKendall(modelresults, sigcells, "KendallCorrelationMap_ConKm_20230426")
+
+# Percent of significant pixels with negative correlation coefficients
+sum(modelresults$estimate[which(modelresults$p.value < 0.05)] <0)/length(modelresults$estimate[which(modelresults$p.value < 0.05)])
+
 # # Total traffic summaries
 # alldf$winterid <- ifelse(alldf$year == 2015 & alldf$month < 5, 1, 
 #                   ifelse(alldf$year == 2015 & alldf$month > 5, 2, 
