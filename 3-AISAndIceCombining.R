@@ -52,7 +52,7 @@ which(qatest$ncells != qatest$nuniquecells)
 
 
 # Create data frames for thickness and concentration 
-icesf <- st_read("../Data_Processed/Ice_SMOS.shp")
+icesf <- st_read("../Data_Processed/Ice_SMOS_with_unc.shp")
 icesf <- icesf %>% mutate_all(~replace_na(., 0))
 
 condf <-  icesf %>% 
@@ -65,7 +65,7 @@ condf <-  icesf %>%
   dplyr::select(-yearmon)
 
 thickdf <-  icesf %>% 
-  dplyr::select(c(43:85), id) %>% 
+  dplyr::select(c(43:84), id) %>% 
   st_drop_geometry() %>%
   gather(key=yearmon, value=icethick, -id) %>%
   mutate(year = as.numeric(substr(yearmon, start=3, stop=6)),
@@ -76,18 +76,20 @@ thickdf <-  icesf %>%
 uncdf <-  icesf %>% 
   dplyr::select(c(85:126), id) %>% 
   st_drop_geometry() %>%
-  gather(key=yearmon, value=icethick, -id) %>%
+  gather(key=yearmon, value=iceunc, -id) %>%
   mutate(year = as.numeric(substr(yearmon, start=3, stop=6)),
          month = as.numeric(substr(yearmon, start=8, stop=9)),
-         icethick = round(icethick, 2)) %>%
+         iceunc = round(iceunc, 2)) %>%
   dplyr::select(-yearmon)
 
 # Join thickness and concentration data frames 
 allice <- left_join(condf, thickdf, by=c("year", "month", "id"))
+allice <- left_join(allice, uncdf, by=c("year", "month", "id"))
 
 # Assume any ice concentration < 15% is no ice 
 allice$icecon <- ifelse(allice$icecon < 15, 0, allice$icecon)
 allice$icethick <- ifelse(allice$icecon < 15, 0, allice$icethick)
+allice$iceunc <- ifelse(allice$icecon < 15, 0, allice$iceunc)
 
 # Revise sf object to adhere to 15% threshold
 iceconsf <- allice %>% 
