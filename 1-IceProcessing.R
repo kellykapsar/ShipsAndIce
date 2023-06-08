@@ -74,7 +74,7 @@ llv = st_as_sf(llv, coords=1:2)
 st_crs(llv)=4326
 llpolar = st_transform(llv,prj)
 
-nc_close()
+nc_close(ice)
 
 # Function to process individual netcdfs into raster layers
 smosprocess <- function(netcdf, newprj = AA, croparea = aisbounds, llpolar){
@@ -92,12 +92,16 @@ smosprocess <- function(netcdf, newprj = AA, croparea = aisbounds, llpolar){
   conc.array <- ncvar_get(ice, "sea_ice_concentration") # 3dim array
   dim(conc.array)
   
+  unc.array <- ncvar_get(ice, "analysis_sea_ice_thickness_unc")
+  dim(unc.array)
+  
   # Identify fill value and replace with NA
   fillvalue <- ncatt_get(ice, "sea_ice_concentration","_FillValue")
   fillvalue
   
   thick.array[thick.array == fillvalue$value] <- NA
   conc.array[conc.array == fillvalue$value] <- NA
+  unc.array[unc.array == fillvalue$value] <- NA
   
   # Get projection information 
   prj <- ncatt_get(ice, "Lambert_Azimuthal_Grid","proj4_string")$value
@@ -108,8 +112,9 @@ smosprocess <- function(netcdf, newprj = AA, croparea = aisbounds, llpolar){
   # Flip to realign in correct direction
   conc.array2 <- aperm(conc.array, c(2,1))
   thick.array2 <- aperm(thick.array, c(2,1))
+  unc.array2 <- aperm(unc.array, c(2,1))
   
-  # Make a raster of all ice concentration values 
+  # Make a raster of all ice thickness values 
   icethick <- raster(thick.array2)
   extent(icethick) <- extent(llpolar)
   crs(icethick) <- prj
@@ -117,11 +122,19 @@ smosprocess <- function(netcdf, newprj = AA, croparea = aisbounds, llpolar){
   # icethickbs <- raster::projectRaster(icethick, crs=newprj, res = raster::res(icethick)) %>% 
   #   raster::crop(y=croparea)
   
-  
-  # Make a raster of all ice thickness values 
+    # Make a raster of all ice concentration values 
   icecon <- raster(conc.array2)
   extent(icecon) <- extent(llpolar)
   crs(icecon) <- prj
+  
+  # iceconbs <- raster::projectRaster(icecon, crs=newprj, res = raster::res(icecon)) %>% 
+  #   raster::crop(y=croparea)
+  
+  
+  # Make a raster of all ice concentration values 
+  iceunc <- raster(unc.array2)
+  extent(iceunc) <- extent(llpolar)
+  crs(iceunc) <- prj
   
   # iceconbs <- raster::projectRaster(icecon, crs=newprj, res = raster::res(icecon)) %>% 
   #   raster::crop(y=croparea)
@@ -133,8 +146,9 @@ smosprocess <- function(netcdf, newprj = AA, croparea = aisbounds, llpolar){
   
   names(icecon) <- t2
   names(icethick) <- t2
+  names(iceunc) <- t2
   
-  return(list(icecon, icethick))
+  return(list(icecon, icethick, iceunc))
   
 }
 
@@ -154,14 +168,21 @@ icethick <- sapply(output, "[[", 2) %>%
   raster::projectRaster(crs=AA, res = raster::res(.)) %>% 
   raster::stackApply(indices=smosmonths, fun=mean) %>% 
   stars::st_as_stars() 
+iceunc <- sapply(output, "[[", 3) %>% 
+  raster::stack() %>% 
+  raster::crop(y=st_transform(aisbounds, prj)) %>% 
+  raster::projectRaster(crs=AA, res = raster::res(.)) %>% 
+  raster::stackApply(indices=smosmonths, fun=mean) %>% 
+  stars::st_as_stars() 
 
 
 # Give attribute names to concentration and thickness 
 icethick <- setNames(icethick, "thick")
 icecon <- setNames(icecon, "con")
+incunc <- setNames(iceunc, "unc")
 
 # Merge concentration and thickness into one stars object 
-icestars <- c(icecon, icethick)
+icestars <- c(icecon, icethick, iceunc)
 
 # Get band names (i.e. dates) from stars object 
 dates <- st_get_dimension_values(icestars, "band")
@@ -174,7 +195,7 @@ icestars <- st_set_dimensions(icestars, 3, values = newdates, name = "date")
 # Convert back to sf object 
 icesf <- st_as_sf(icestars) 
 # Prep new column names based on dates 
-cols <- c(paste0("con_",newdates), paste0("thick_", newdates),"geometry")
+cols <- c(paste0("con_",newdates), paste0("thick_", newdates), paste0("unc_", newdates),"geometry")
 # Rename columns (Otherwise it doesn't give the band names as columns for thickness, 
 # not sure why - maybe to avoid duplicates?)
 colnames(icesf) <- cols
@@ -183,7 +204,7 @@ icesf <- icesf %>% mutate(id=1:nrow(.))
 
 # Save output
 write_stars(icestars, "../Data_Processed/Ice_SMOS.tif")
-st_write(icesf, "../Data_Processed/Ice_SMOS.shp")
+st_write(icesf, "../Data_Processed/Ice_SMOS_with_unc.shp")
 
 proc.time() - start
 

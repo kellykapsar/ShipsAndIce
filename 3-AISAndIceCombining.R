@@ -73,6 +73,15 @@ thickdf <-  icesf %>%
          icethick = round(icethick, 2)) %>%
   dplyr::select(-yearmon)
 
+uncdf <-  icesf %>% 
+  dplyr::select(c(85:126), id) %>% 
+  st_drop_geometry() %>%
+  gather(key=yearmon, value=icethick, -id) %>%
+  mutate(year = as.numeric(substr(yearmon, start=3, stop=6)),
+         month = as.numeric(substr(yearmon, start=8, stop=9)),
+         icethick = round(icethick, 2)) %>%
+  dplyr::select(-yearmon)
+
 # Join thickness and concentration data frames 
 allice <- left_join(condf, thickdf, by=c("year", "month", "id"))
 
